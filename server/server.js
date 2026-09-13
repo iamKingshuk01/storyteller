@@ -235,6 +235,18 @@ io.on("connection", (socket) => {
     });
 
 
+
+        socket.on("reaction", (data) => {
+        const roomCode = socket.roomCode;
+
+        if (!roomCode || !rooms.has(roomCode)) return;
+
+        socket.to(roomCode).emit("sync-reaction", {
+            emoji: data.emoji
+        });
+    });
+
+
     // ================= DISCONNECT =================
 
     socket.on("disconnect", () => {

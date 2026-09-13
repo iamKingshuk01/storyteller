@@ -569,3 +569,44 @@ socket.on("user-count", (data) => {
         userCount.textContent = "👥 " + data.count + " listeners";
     }
 });
+
+
+// =========================================
+// LIVE REACTIONS
+// =========================================
+
+function sendReaction(emoji) {
+    socket.emit("reaction", {
+        emoji: emoji
+    });
+
+    showFloatingEmoji(emoji);
+}
+
+socket.on("sync-reaction", (data) => {
+    showFloatingEmoji(data.emoji);
+});
+
+function showFloatingEmoji(emoji) {
+
+    const container = document.getElementById("reactionContainer");
+
+    if (!container) return;
+
+    const span = document.createElement("span");
+
+    span.textContent = emoji;
+    span.className = "floating-emoji";
+
+    // Random horizontal position so emojis don't overlap
+    const randomLeft = Math.random() * 80 + 10; // 10% - 90%
+    span.style.left = randomLeft + "%";
+
+    container.appendChild(span);
+
+    // Remove after animation finishes
+    setTimeout(() => {
+        span.remove();
+    }, 3000);
+
+}

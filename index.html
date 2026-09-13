@@ -17,6 +17,8 @@
 
 <body>
 
+    <div id="reactionContainer" class="reaction-container"></div>
+
     <!-- ================= NAVBAR ================= -->
 
     <header class="navbar">
@@ -444,38 +446,43 @@
 
         <div class="player-extra">
 
-            <button onclick="toggleMute()">
-                🔊
-            </button>
+    <button onclick="toggleMute()">
+        🔊
+    </button>
 
-            <select id="sleepTimer" onchange="setSleepTimer()">
+    <select id="sleepTimer" onchange="setSleepTimer()">
 
-                <option value="0">
-                    Sleep Timer
-                </option>
+        <option value="0">
+            Sleep Timer
+        </option>
 
-                <option value="15">
-                    15 min
-                </option>
+        <option value="15">
+            15 min
+        </option>
 
-                <option value="30">
-                    30 min
-                </option>
+        <option value="30">
+            30 min
+        </option>
 
-                <option value="45">
-                    45 min
-                </option>
+        <option value="45">
+            45 min
+        </option>
 
-                <option value="60">
-                    60 min
-                </option>
+        <option value="60">
+            60 min
+        </option>
 
-            </select>
+    </select>
 
-        </div>
-
+    <div class="reaction-bar">
+        <button class="reaction-btn" onclick="sendReaction('❤️')">❤️</button>
+        <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
+        <button class="reaction-btn" onclick="sendReaction('😢')">😢</button>
+        <button class="reaction-btn" onclick="sendReaction('😴')">😴</button>
+        <button class="reaction-btn" onclick="sendReaction('👍')">👍</button>
     </div>
 
+</div>
 
     <!-- ================= ROOM MODAL ================= -->
 
