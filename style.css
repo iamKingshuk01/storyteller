@@ -678,7 +678,7 @@ body {
 ========================================= */
 
 .jam-section {
-    margin: 60px 6% 160px;
+    margin: 60px 6% 220px;
 
     min-height: 450px;
 
@@ -1305,10 +1305,12 @@ footer .copyright {
             repeat(2, 1fr);
     }
 
-    .jam-section {
+        .jam-section {
         margin-left: 20px;
 
         margin-right: 20px;
+
+        margin-bottom: 320px;
     }
 
     .player {
