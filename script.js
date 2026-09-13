@@ -1,5 +1,4 @@
-const socket = io();
-
+const socket = io("https://storyteller-backend-us3a.onrender.com");
 console.log("🔌 Connected to SleepStory server");
 /* =========================================
    SLEEPSTORY - STEP 1
