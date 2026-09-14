@@ -34,6 +34,7 @@ function togglePlay() {
         audio.play();
         playButton.textContent = "❚❚";
         updateFullPlayButton(true);
+        openFullPlayer();
 
         socket.emit("play", {
             currentTime: audio.currentTime
