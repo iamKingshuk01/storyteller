@@ -1824,3 +1824,15 @@ footer .copyright {
 .reaction-bar-full .reaction-btn {
     font-size: 34px;
 }
+
+
+
+/* Jam Choice Modal buttons */
+
+.jam-choice-buttons {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+}

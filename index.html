@@ -95,15 +95,15 @@
                     onclick="playStory('The Last Star')"
                 >
                     ▶ Play Story
+                    
                 </button>
 
-                <button
+                               <button
                     class="secondary-btn"
-                    onclick="createRoom()"
+                    onclick="openJamChoice()"
                 >
                     👥 Listen Together
                 </button>
-
             </div>
 
         </div>
@@ -578,6 +578,50 @@
                 <button class="reaction-btn" onclick="sendReaction('😢')">😢</button>
                 <button class="reaction-btn" onclick="sendReaction('😴')">😴</button>
                 <button class="reaction-btn" onclick="sendReaction('👍')">👍</button>
+            </div>
+
+        </div>
+
+    </div>    <!-- ================= JAM CHOICE MODAL ================= -->
+
+    <div class="modal" id="jamChoiceModal">
+
+        <div class="modal-content">
+
+            <button
+                class="close-btn"
+                onclick="closeJamChoice()"
+            >
+                ✕
+            </button>
+
+            <div class="modal-icon">
+                👥
+            </div>
+
+            <h2>Listen Together</h2>
+
+            <p>
+                Start a new Jam room, or join
+                one your friend already created.
+            </p>
+
+            <div class="jam-choice-buttons">
+
+                <button
+                    class="primary-btn"
+                    onclick="closeJamChoice(); createRoom();"
+                >
+                    ✨ Create a Jam
+                </button>
+
+                <button
+                    class="outline-btn"
+                    onclick="closeJamChoice(); joinRoom();"
+                >
+                    Join with Code
+                </button>
+
             </div>
 
         </div>

@@ -757,3 +757,20 @@ socket.on("new-chat-message", (data) => {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
 });
+
+
+
+
+// =========================================
+// JAM CHOICE MODAL
+// =========================================
+
+function openJamChoice() {
+    document.getElementById("jamChoiceModal")
+        .style.display = "flex";
+}
+
+function closeJamChoice() {
+    document.getElementById("jamChoiceModal")
+        .style.display = "none";
+}
