@@ -1483,7 +1483,13 @@ footer .copyright {
 .full-player {
     position: fixed;
 
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    width: 100%;
+    height: 100%;
 
     z-index: 5000;
 
@@ -1504,6 +1510,8 @@ footer .copyright {
         #050505;
 
     overflow-y: auto;
+
+    margin: 0;
 }
 
 .full-player.active {
