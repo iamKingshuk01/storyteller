@@ -95,7 +95,7 @@
                     onclick="playStory('The Last Star')"
                 >
                     ▶ Play Story
-                    
+
                 </button>
 
                                <button
@@ -406,23 +406,19 @@
         </div>
 
 
-        <div class="player-controls">
+               <div class="full-player-controls">
 
-            <button onclick="skipBackward()">
-                ↶
-            </button>
+            <button onclick="previousStory()">⏮</button>
 
             <button
-                class="play-button"
-                id="playButton"
+                class="full-play-button"
+                id="fullPlayButton"
                 onclick="togglePlay()"
             >
                 ▶
             </button>
 
-            <button onclick="skipForward()">
-                ↷
-            </button>
+            <button onclick="nextStory()">⏭</button>
 
         </div>
 
@@ -531,22 +527,26 @@
 
         </div>
 
-        <div class="full-player-controls">
+                <div class="player-controls">
 
-            <button onclick="skipBackward()">⏮</button>
+            <button onclick="previousStory()">
+                ⏮
+            </button>
 
             <button
-                class="full-play-button"
-                id="fullPlayButton"
+                class="play-button"
+                id="playButton"
                 onclick="togglePlay()"
             >
                 ▶
             </button>
 
-            <button onclick="skipForward()">⏭</button>
+            <button onclick="nextStory()">
+                ⏭
+            </button>
 
         </div>
-
+        
         <div class="full-player-tabs">
 
             <button class="tab-btn active" onclick="showTab('chat')" id="tabChatBtn">

@@ -1,6 +1,20 @@
 const socket = io("https://storyteller-backend-us3a.onrender.com");
 
 
+// =========================================
+// STORY LIST
+// =========================================
+
+const stories = [
+    { title: "The Last Star", src: "AUDIO/the-last-star.mp3" },
+    { title: "Moonlight Dreams", src: "AUDIO/the-last-star.mp3" },
+    { title: "The Silent Forest", src: "AUDIO/the-last-star.mp3" },
+    { title: "Ocean Whispers", src: "AUDIO/the-last-star.mp3" }
+];
+
+let currentStoryIndex = 0;
+
+
 console.log("🔌 Connected to SleepStory server");
 /* =========================================
    SLEEPSTORY - STEP 1
@@ -71,32 +85,60 @@ socket.on("sync-pause", (data) => {
 
 function playStory(storyName) {
 
-    playerTitle.textContent = storyName;
+    // খুঁজে বের করি এই story-টা list-এ কোথায় আছে
+    const foundIndex = stories.findIndex(
+        (story) => story.title === storyName
+    );
 
-    /*
-        Step 1 uses only one local MP3.
-
-        Later we will connect different stories
-        to different audio files.
-    */
-
-    if (audio.paused) {
-
-        audio.play();
-
-        playButton.textContent = "❚❚";
-        updateFullPlayButton(true);
-
-    } else {
-
-        audio.pause();
-
-        playButton.textContent = "▶";
-        updateFullPlayButton(false);
-
+    if (foundIndex !== -1) {
+        currentStoryIndex = foundIndex;
+        loadCurrentStory();
     }
 
+    audio.play();
+
+    playButton.textContent = "❚❚";
+    updateFullPlayButton(true);
+
     openFullPlayer();
+
+}
+
+function loadCurrentStory() {
+
+    const story = stories[currentStoryIndex];
+
+    playerTitle.textContent = story.title;
+    fullPlayerTitle.textContent = story.title;
+
+    audio.src = story.src;
+
+}
+
+function nextStory() {
+
+    currentStoryIndex = (currentStoryIndex + 1) % stories.length;
+
+    loadCurrentStory();
+
+    audio.play();
+
+    playButton.textContent = "❚❚";
+    updateFullPlayButton(true);
+
+}
+
+function previousStory() {
+
+    currentStoryIndex =
+        (currentStoryIndex - 1 + stories.length) % stories.length;
+
+    loadCurrentStory();
+
+    audio.play();
+
+    playButton.textContent = "❚❚";
+    updateFullPlayButton(true);
 
 }
 
