@@ -246,6 +246,17 @@ io.on("connection", (socket) => {
         });
     });
 
+    
+    socket.on("chat-message", (data) => {
+        const roomCode = socket.roomCode;
+
+        if (!roomCode || !rooms.has(roomCode)) return;
+
+        io.to(roomCode).emit("new-chat-message", {
+            message: data.message,
+            senderId: socket.id
+        });
+    });
 
     // ================= DISCONNECT =================
 

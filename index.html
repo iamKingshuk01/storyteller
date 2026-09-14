@@ -489,6 +489,99 @@
 
 </div>
 
+    <!-- ================= FULL PAGE PLAYER ================= -->
+
+    <div class="full-player" id="fullPlayer">
+
+        <div class="full-player-top">
+
+            <button class="full-player-close" onclick="closeFullPlayer()">
+                ⌄
+            </button>
+
+            <span id="fullPlayerRoomInfo" class="full-player-room-info"></span>
+
+        </div>
+
+        <div class="full-player-cover" id="fullPlayerCover">
+            🌙
+        </div>
+
+        <div class="full-player-info">
+            <h2 id="fullPlayerTitle">The Last Star</h2>
+            <p>SleepStory Original</p>
+        </div>
+
+        <div class="full-player-progress">
+
+            <span id="fullCurrentTime">0:00</span>
+
+            <input
+                type="range"
+                id="fullProgressBar"
+                min="0"
+                max="100"
+                value="0"
+                oninput="changeProgressFull()"
+            >
+
+            <span id="fullDuration">0:00</span>
+
+        </div>
+
+        <div class="full-player-controls">
+
+            <button onclick="skipBackward()">⏮</button>
+
+            <button
+                class="full-play-button"
+                id="fullPlayButton"
+                onclick="togglePlay()"
+            >
+                ▶
+            </button>
+
+            <button onclick="skipForward()">⏭</button>
+
+        </div>
+
+        <div class="full-player-tabs">
+
+            <button class="tab-btn active" onclick="showTab('chat')" id="tabChatBtn">
+                💬 Chat
+            </button>
+
+            <button class="tab-btn" onclick="showTab('reactions')" id="tabReactionsBtn">
+                ❤️ Reactions
+            </button>
+
+        </div>
+
+        <div class="full-player-panel" id="chatPanel">
+
+            <div class="chat-messages" id="chatMessages"></div>
+
+            <div class="chat-input-row">
+                <input type="text" id="chatInput" placeholder="Type a message...">
+                <button onclick="sendChatMessage()">➤</button>
+            </div>
+
+        </div>
+
+        <div class="full-player-panel" id="reactionsPanel" style="display: none;">
+
+            <div class="reaction-bar-full">
+                <button class="reaction-btn" onclick="sendReaction('❤️')">❤️</button>
+                <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
+                <button class="reaction-btn" onclick="sendReaction('😢')">😢</button>
+                <button class="reaction-btn" onclick="sendReaction('😴')">😴</button>
+                <button class="reaction-btn" onclick="sendReaction('👍')">👍</button>
+            </div>
+
+        </div>
+
+    </div>
+
     <!-- ================= ROOM MODAL ================= -->
 
     <div

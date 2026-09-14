@@ -33,6 +33,7 @@ function togglePlay() {
     if (audio.paused) {
         audio.play();
         playButton.textContent = "❚❚";
+        updateFullPlayButton(true);
 
         socket.emit("play", {
             currentTime: audio.currentTime
@@ -41,6 +42,7 @@ function togglePlay() {
     } else {
         audio.pause();
         playButton.textContent = "▶";
+        updateFullPlayButton(false);
 
         socket.emit("pause", {
             currentTime: audio.currentTime
@@ -82,21 +84,18 @@ function playStory(storyName) {
         audio.play();
 
         playButton.textContent = "❚❚";
+        updateFullPlayButton(true);
 
     } else {
 
         audio.pause();
 
         playButton.textContent = "▶";
+        updateFullPlayButton(false);
 
     }
 
-    // Scroll user's attention to player
-    document.getElementById("player")
-        .scrollIntoView({
-            behavior: "smooth",
-            block: "center"
-        });
+    openFullPlayer();
 
 }
 
@@ -369,6 +368,10 @@ function selectMood(mood) {
 socket.on("room-created", (data) => {
     console.log("🌙 Room created:", data.roomCode);
 
+    fullPlayerRoomInfo.textContent = "Room: " + data.roomCode;
+
+    openFullPlayer();
+
     alert("Your Jam Room Code is: " + data.roomCode);
 });
 
@@ -476,7 +479,7 @@ function connectToRoom() {
 socket.on("room-joined", (data) => {
     console.log("👥 Successfully joined:", data.roomCode);
 
-    // Host-এর current story position এ নিয়ে যাবে
+    // Host-এর current story position এ নিয়ে যাবে
     audio.currentTime = data.currentTime || 0;
 
     // Host যদি এখন Play করে থাকে
@@ -484,10 +487,12 @@ socket.on("room-joined", (data) => {
         audio.play()
             .then(() => {
                 playButton.textContent = "❚❚";
+                updateFullPlayButton(true);
             })
             .catch((error) => {
                 console.log("Autoplay blocked:", error);
                 playButton.textContent = "▶";
+                updateFullPlayButton(false);
             });
     } 
     
@@ -495,7 +500,12 @@ socket.on("room-joined", (data) => {
     else {
         audio.pause();
         playButton.textContent = "▶";
+        updateFullPlayButton(false);
     }
+
+    fullPlayerRoomInfo.textContent = "Room: " + data.roomCode;
+
+    openFullPlayer();
 
     alert("✅ Successfully joined Jam: " + data.roomCode);
     closeModal();
@@ -610,3 +620,139 @@ function showFloatingEmoji(emoji) {
     }, 3000);
 
 }
+
+
+// =========================================
+// FULL PAGE PLAYER
+// =========================================
+
+const fullPlayer = document.getElementById("fullPlayer");
+const fullPlayButton = document.getElementById("fullPlayButton");
+const fullProgressBar = document.getElementById("fullProgressBar");
+const fullCurrentTimeText = document.getElementById("fullCurrentTime");
+const fullDurationText = document.getElementById("fullDuration");
+const fullPlayerTitle = document.getElementById("fullPlayerTitle");
+const fullPlayerRoomInfo = document.getElementById("fullPlayerRoomInfo");
+
+function openFullPlayer() {
+    fullPlayer.classList.add("active");
+    fullPlayerTitle.textContent = playerTitle.textContent;
+}
+
+function closeFullPlayer() {
+    fullPlayer.classList.remove("active");
+}
+
+function updateFullPlayButton(isPlaying) {
+    const symbol = isPlaying ? "❚❚" : "▶";
+    fullPlayButton.textContent = symbol;
+}
+
+function changeProgressFull() {
+    if (!audio.duration) return;
+
+    const newTime = (fullProgressBar.value / 100) * audio.duration;
+    audio.currentTime = newTime;
+
+    socket.emit("seek", {
+        currentTime: audio.currentTime
+    });
+}
+
+// Keep full player progress in sync with mini player
+audio.addEventListener("timeupdate", function () {
+    if (!audio.duration) return;
+
+    const percentage = (audio.currentTime / audio.duration) * 100;
+
+    fullProgressBar.value = percentage;
+    fullCurrentTimeText.textContent = formatTime(audio.currentTime);
+});
+
+audio.addEventListener("loadedmetadata", function () {
+    fullDurationText.textContent = formatTime(audio.duration);
+});
+
+// =========================================
+// TABS (Chat / Reactions)
+// =========================================
+
+function showTab(tab) {
+
+    const chatPanel = document.getElementById("chatPanel");
+    const reactionsPanel = document.getElementById("reactionsPanel");
+    const tabChatBtn = document.getElementById("tabChatBtn");
+    const tabReactionsBtn = document.getElementById("tabReactionsBtn");
+
+    if (tab === "chat") {
+        chatPanel.style.display = "flex";
+        reactionsPanel.style.display = "none";
+        tabChatBtn.classList.add("active");
+        tabReactionsBtn.classList.remove("active");
+    } else {
+        chatPanel.style.display = "none";
+        reactionsPanel.style.display = "flex";
+        tabChatBtn.classList.remove("active");
+        tabReactionsBtn.classList.add("active");
+    }
+
+}
+
+
+// =========================================
+// CHAT
+// =========================================
+
+function sendChatMessage() {
+
+    const chatInput = document.getElementById("chatInput");
+
+    const message = chatInput.value.trim();
+
+    if (message === "") return;
+
+    socket.emit("chat-message", {
+        message: message
+    });
+
+    chatInput.value = "";
+
+}
+
+// Allow pressing Enter to send
+document.addEventListener("DOMContentLoaded", function () {
+
+    const chatInput = document.getElementById("chatInput");
+
+    if (chatInput) {
+        chatInput.addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+                sendChatMessage();
+            }
+        });
+    }
+
+});
+
+socket.on("new-chat-message", (data) => {
+
+    const chatMessages = document.getElementById("chatMessages");
+
+    if (!chatMessages) return;
+
+    const bubble = document.createElement("div");
+
+    bubble.classList.add("chat-message");
+
+    if (data.senderId === socket.id) {
+        bubble.classList.add("own");
+    }
+
+    bubble.textContent = data.message;
+
+    chatMessages.appendChild(bubble);
+
+    // Auto-scroll to latest message
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+});
