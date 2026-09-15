@@ -1,6 +1,6 @@
 /* =========================================================
-   SLEEPSTORY — COMPLETE SCRIPT
-   Jam + Local Audio + YouTube
+   SLEEPSTORY - MAIN SCRIPT
+   Home Page + Stories + Player + Jam
 ========================================================= */
 
 
@@ -11,9 +11,12 @@
 const BACKEND_URL =
     "https://storyteller-backend-us3a.onrender.com";
 
+const JAM_PAGE =
+    "jam.html";
+
 
 /* =========================================================
-   SOCKET.IO
+   SOCKET
 ========================================================= */
 
 let socket = null;
@@ -22,20 +25,21 @@ try {
 
     if (typeof io !== "undefined") {
 
-        socket = io(BACKEND_URL, {
+        socket = io(
+            BACKEND_URL,
+            {
+                transports: [
+                    "websocket",
+                    "polling"
+                ],
 
-            transports: [
-                "websocket",
-                "polling"
-            ],
+                reconnection: true,
 
-            reconnection: true,
+                reconnectionAttempts: Infinity,
 
-            reconnectionAttempts: Infinity,
-
-            reconnectionDelay: 1000
-
-        });
+                reconnectionDelay: 1000
+            }
+        );
 
     }
 
@@ -50,68 +54,44 @@ try {
 
 
 /* =========================================================
-   AUDIO ELEMENTS
+   DOM ELEMENTS
 ========================================================= */
 
 const audioPlayer =
-    document.getElementById(
-        "audioPlayer"
-    );
+    document.getElementById("audioPlayer");
 
 const playerTitle =
-    document.getElementById(
-        "playerTitle"
-    );
+    document.getElementById("playerTitle");
 
 const currentTimeElement =
-    document.getElementById(
-        "currentTime"
-    );
+    document.getElementById("currentTime");
 
 const durationElement =
-    document.getElementById(
-        "duration"
-    );
+    document.getElementById("duration");
 
 const progressBar =
-    document.getElementById(
-        "progressBar"
-    );
+    document.getElementById("progressBar");
 
 const fullCurrentTime =
-    document.getElementById(
-        "fullCurrentTime"
-    );
+    document.getElementById("fullCurrentTime");
 
 const fullDuration =
-    document.getElementById(
-        "fullDuration"
-    );
+    document.getElementById("fullDuration");
 
 const fullProgressBar =
-    document.getElementById(
-        "fullProgressBar"
-    );
+    document.getElementById("fullProgressBar");
 
 const fullPlayerTitle =
-    document.getElementById(
-        "fullPlayerTitle"
-    );
+    document.getElementById("fullPlayerTitle");
 
 const fullPlayer =
-    document.getElementById(
-        "fullPlayer"
-    );
+    document.getElementById("fullPlayer");
 
 const fullPlayButton =
-    document.getElementById(
-        "fullPlayButton"
-    );
+    document.getElementById("fullPlayButton");
 
 const playButton =
-    document.getElementById(
-        "playButton"
-    );
+    document.getElementById("playButton");
 
 
 /* =========================================================
@@ -124,39 +104,155 @@ let youtubeReady = false;
 
 let youtubeStoryActive = false;
 
+let suppressJamEvents = false;
+
 
 /* =========================================================
-   JAM
+   JAM STATE
 ========================================================= */
 
 let roomCode = null;
 
 let isHost = false;
 
-let jamSyncing = false;
-
-let suppressJamEvents = false;
+let pendingJoinRoom = null;
 
 
 /* =========================================================
-   YOUTUBE API READY
+   STORY STATE
+========================================================= */
+
+let currentStory = null;
+
+let currentCategoryStories = [];
+
+let currentStoryIndex = 0;
+
+
+/* =========================================================
+   STORY LIBRARY
+========================================================= */
+
+const stories = [
+
+    {
+        title: "The Last Star",
+
+        category: "Bedtime Stories",
+
+        type: "local",
+
+        src: "AUDIO/the-last-star.mp3",
+
+        description:
+            "A peaceful journey through a quiet universe."
+    },
+
+    {
+        title: "Sunday Suspense 1",
+
+        category: "Sunday Suspense",
+
+        type: "youtube",
+
+        videoId: "AWQ-7O4jFIk",
+
+        description:
+            "A thrilling Bengali audio story."
+    },
+
+    {
+        title: "Sunday Suspense 2",
+
+        category: "Sunday Suspense",
+
+        type: "youtube",
+
+        videoId: "w9W-LbYbeNs",
+
+        description:
+            "Another suspenseful journey."
+    },
+
+    {
+        title: "Mirchi Bangla 1",
+
+        category: "Mirchi Bangla",
+
+        type: "youtube",
+
+        videoId: "Ut5pYfY1YnY",
+
+        description:
+            "A Bengali audio experience."
+    },
+
+    {
+        title: "Mirchi Bangla 2",
+
+        category: "Mirchi Bangla",
+
+        type: "youtube",
+
+        videoId: "AWQ-7O4jFIk",
+
+        description:
+            "A story from the Bengali audio world."
+    }
+
+];
+
+
+/* =========================================================
+   INITIAL STORY
+========================================================= */
+
+if (stories.length > 0) {
+
+    currentStory = stories[0];
+
+}
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        setupAudio();
+
+        setupSocketEvents();
+
+        setupChat();
+
+        restoreLastStory();
+
+        console.log(
+            "🌙 SleepStory loaded."
+        );
+
+    }
+);
+
+
+/* =========================================================
+   YOUTUBE API
 ========================================================= */
 
 window.onYouTubeIframeAPIReady =
 function () {
 
-    const element =
-        document.getElementById(
-            "youtubePlayer"
-        );
+    const youtubeElement =
+        document.getElementById("youtubePlayer");
 
-
-    if (!element) {
+    if (!youtubeElement) {
 
         return;
 
     }
-
 
     youtubePlayer =
         new YT.Player(
@@ -179,97 +275,51 @@ function () {
 
                 events: {
 
-                    onReady: function () {
+                    onReady:
+                    function () {
 
-                        youtubeReady =
-                            true;
-
+                        youtubeReady = true;
 
                         console.log(
-                            "🎬 YouTube Player Ready"
+                            "🎬 YouTube player ready."
                         );
 
-
-                        const container =
-                            document.getElementById(
-                                "youtubePlayerContainer"
-                            );
-
-
-                        if (container) {
-
-                            container.style.display =
-                                "none";
-
-                        }
-
                     },
-
 
                     onStateChange:
                     function (event) {
 
-                        if (
-                            !youtubeStoryActive
-                        ) {
+                        if (!youtubeStoryActive) {
 
                             return;
 
                         }
 
-
-                        /*
-                           Ignore events caused
-                           by remote Jam sync.
-                        */
-
-                        if (
-                            suppressJamEvents
-                        ) {
+                        if (suppressJamEvents) {
 
                             return;
 
                         }
-
 
                         if (
                             event.data ===
                             YT.PlayerState.PLAYING
                         ) {
 
-                            updatePlayButtons(
-                                true
-                            );
-
+                            updatePlayButtons(true);
 
                             syncJamPlay();
 
                         }
-
 
                         if (
                             event.data ===
                             YT.PlayerState.PAUSED
                         ) {
 
-                            updatePlayButtons(
-                                false
-                            );
-
+                            updatePlayButtons(false);
 
                             syncJamPause();
-
-                        }
-
-
-                        if (
-                            event.data ===
-                            YT.PlayerState.ENDED
-                        ) {
-
-                            updatePlayButtons(
-                                false
-                            );
 
                         }
 
@@ -284,508 +334,768 @@ function () {
 
 
 /* =========================================================
-   STORIES
+   AUDIO SETUP
 ========================================================= */
 
-const stories = [
+function setupAudio() {
 
-    {
+    if (!audioPlayer) {
 
-        title:
-            "SleepStory",
-
-        category:
-            "Bedtime Stories",
-
-        type:
-            "local",
-
-        src:
-            "AUDIO/the-last-star.mp3"
+        return;
 
     }
 
-];
+    audioPlayer.addEventListener(
+        "loadedmetadata",
+        function () {
 
+            updateDuration();
 
-/* =========================================================
-   CATEGORY LIBRARY
-========================================================= */
-
-const storyCategories = {
-
-    "Sunday Suspense": [
-
-        {
-
-            title:
-                "Sunday Suspense",
-
-            description:
-                "Bengali suspense and thriller stories",
-
-            type:
-                "youtube",
-
-            videoId:
-                "AWQ-7O4jFIk"
-
-        },
-
-        {
-
-            title:
-                "Sunday Suspense Story",
-
-            description:
-                "Mystery and suspense audio",
-
-            type:
-                "youtube",
-
-            videoId:
-                "w9W-LbYbeNs"
+            updateProgress();
 
         }
+    );
 
-    ],
+    audioPlayer.addEventListener(
+        "timeupdate",
+        function () {
 
-
-    "Mirchi Bangla": [
-
-        {
-
-            title:
-                "Mirchi Bangla",
-
-            description:
-                "Bengali audio storytelling",
-
-            type:
-                "youtube",
-
-            videoId:
-                "Ut5pYfY1YnY"
-
-        },
-
-        {
-
-            title:
-                "Mirchi Bangla Story",
-
-            description:
-                "Popular Bengali story",
-
-            type:
-                "youtube",
-
-            videoId:
-                "AWQ-7O4jFIk"
+            updateProgress();
 
         }
+    );
 
-    ],
+    audioPlayer.addEventListener(
+        "play",
+        function () {
 
+            updatePlayButtons(true);
 
-    "Love Stories": [
+            if (suppressJamEvents) {
 
-        {
+                return;
 
-            title:
-                "Love Stories",
+            }
 
-            description:
-                "Romantic Bengali stories",
-
-            type:
-                "youtube",
-
-            videoId:
-                ""
+            syncJamPlay();
 
         }
+    );
 
-    ],
+    audioPlayer.addEventListener(
+        "pause",
+        function () {
 
+            updatePlayButtons(false);
 
-    "Horror Stories": [
+            if (suppressJamEvents) {
 
-        {
+                return;
 
-            title:
-                "Horror Stories",
+            }
 
-            description:
-                "Ghost and paranormal stories",
+            if (!audioPlayer.ended) {
 
-            type:
-                "youtube",
+                syncJamPause();
 
-            videoId:
-                ""
-
-        }
-
-    ],
-
-
-    "Mystery & Thriller": [
-
-        {
-
-            title:
-                "Mystery & Thriller",
-
-            description:
-                "Mystery and investigation",
-
-            type:
-                "youtube",
-
-            videoId:
-                ""
+            }
 
         }
+    );
 
-    ],
+    audioPlayer.addEventListener(
+        "ended",
+        function () {
 
-
-    "Crime Stories": [
-
-        {
-
-            title:
-                "Crime Stories",
-
-            description:
-                "Crime and detective stories",
-
-            type:
-                "youtube",
-
-            videoId:
-                ""
+            updatePlayButtons(false);
 
         }
-
-    ],
-
-
-    "Emotional Stories": [
-
-        {
-
-            title:
-                "Emotional Stories",
-
-            description:
-                "Emotional and life stories",
-
-            type:
-                "youtube",
-
-            videoId:
-                ""
-
-        }
-
-    ],
-
-
-    "Bedtime Stories": [
-
-        {
-
-            title:
-                "SleepStory",
-
-            description:
-                "Calm and relaxing bedtime audio",
-
-            type:
-                "local",
-
-            src:
-                "AUDIO/the-last-star.mp3"
-
-        }
-
-    ],
-
-
-    "Bengali Stories": [
-
-        {
-
-            title:
-                "Bengali Stories",
-
-            description:
-                "Bengali audio stories",
-
-            type:
-                "youtube",
-
-            videoId:
-                ""
-
-        }
-
-    ],
-
-
-    "English Stories": [
-
-        {
-
-            title:
-                "English Stories",
-
-            description:
-                "English audio stories",
-
-            type:
-                "youtube",
-
-            videoId:
-                ""
-
-        }
-
-    ]
-
-};
-
-
-/* =========================================================
-   CURRENT STORY
-========================================================= */
-
-let currentStory = null;
-
-let currentCategoryStories = [];
-
-let currentStoryIndex = 0;
-
-
-/* =========================================================
-   INITIAL SETUP
-========================================================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        if (audioPlayer) {
-
-            audioPlayer.volume = 1;
-
-
-            audioPlayer.addEventListener(
-                "loadedmetadata",
-                updateDuration
-            );
-
-
-            audioPlayer.addEventListener(
-                "timeupdate",
-                updateProgress
-            );
-
-
-            audioPlayer.addEventListener(
-                "play",
-                function () {
-
-                    if (
-                        suppressJamEvents
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    youtubeStoryActive =
-                        false;
-
-
-                    updatePlayButtons(
-                        true
-                    );
-
-
-                    syncJamPlay();
-
-                }
-            );
-
-
-            audioPlayer.addEventListener(
-                "pause",
-                function () {
-
-                    if (
-                        suppressJamEvents
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    if (
-                        !audioPlayer.ended
-                    ) {
-
-                        updatePlayButtons(
-                            false
-                        );
-
-
-                        syncJamPause();
-
-                    }
-
-                }
-            );
-
-
-            audioPlayer.addEventListener(
-                "ended",
-                function () {
-
-                    updatePlayButtons(
-                        false
-                    );
-
-                }
-            );
-
-        }
-
-
-        const youtubeContainer =
-            document.getElementById(
-                "youtubePlayerContainer"
-            );
-
-
-        if (youtubeContainer) {
-
-            youtubeContainer.style.display =
-                "none";
-
-        }
-
-
-        const chatInput =
-            document.getElementById(
-                "chatInput"
-            );
-
-
-        if (chatInput) {
-
-            chatInput.addEventListener(
-                "keydown",
-                function (event) {
-
-                    if (
-                        event.key ===
-                        "Enter"
-                    ) {
-
-                        event.preventDefault();
-
-                        sendChatMessage();
-
-                    }
-
-                }
-            );
-
-        }
-
-
-        setupSocketEvents();
-
-    }
-);
-
-
-/* =========================================================
-   FORMAT TIME
-========================================================= */
-
-function formatTime(seconds) {
-
-    if (
-        !Number.isFinite(
-            Number(seconds)
-        ) ||
-        Number(seconds) < 0
-    ) {
-
-        return "0:00";
-
-    }
-
-
-    const minutes =
-        Math.floor(
-            Number(seconds) / 60
-        );
-
-
-    const secs =
-        Math.floor(
-            Number(seconds) % 60
-        );
-
-
-    return (
-        minutes +
-        ":" +
-        String(secs).padStart(
-            2,
-            "0"
-        )
     );
 
 }
 
 
 /* =========================================================
-   UPDATE DURATION
+   SOCKET EVENTS
 ========================================================= */
 
-function updateDuration() {
+function setupSocketEvents() {
 
-    if (!audioPlayer) {
+    if (!socket) {
 
         return;
 
     }
 
 
-    const duration =
-        audioPlayer.duration;
+    /* =========================================
+       CONNECT
+    ========================================= */
+
+    socket.on(
+        "connect",
+        function () {
+
+            console.log(
+                "🟢 Connected to SleepStory server:",
+                socket.id
+            );
+
+        }
+    );
 
 
-    if (durationElement) {
+    /* =========================================
+       CONNECTION ERROR
+    ========================================= */
 
-        durationElement.textContent =
-            formatTime(duration);
+    socket.on(
+        "connect_error",
+        function (error) {
+
+            console.error(
+                "Socket connection error:",
+                error
+            );
+
+        }
+    );
+
+
+    /* =========================================
+       ROOM CREATED
+    ========================================= */
+
+    socket.on(
+        "room-created",
+        function (data) {
+
+            if (!data) {
+
+                return;
+
+            }
+
+            const code =
+                (
+                    data.roomCode ||
+                    data.code ||
+                    ""
+                )
+                    .toUpperCase();
+
+
+            if (code.length !== 6) {
+
+                alert(
+                    "Invalid room code received."
+                );
+
+                return;
+
+            }
+
+
+            roomCode = code;
+
+            isHost = true;
+
+
+            /*
+               Save current story before leaving
+               the home page.
+            */
+
+            saveJamStory();
+
+
+            console.log(
+                "🌙 Jam created:",
+                roomCode
+            );
+
+
+            /*
+               IMPORTANT:
+               Move to REAL NEW PAGE.
+            */
+
+            goToJamPage(
+                roomCode,
+                true
+            );
+
+        }
+    );
+
+
+    /* =========================================
+       ROOM JOINED
+    ========================================= */
+
+    socket.on(
+        "room-joined",
+        function (data) {
+
+            if (!data) {
+
+                return;
+
+            }
+
+
+            const joinedRoom =
+                (
+                    data.roomCode ||
+                    pendingJoinRoom ||
+                    ""
+                )
+                    .toUpperCase();
+
+
+            if (joinedRoom.length !== 6) {
+
+                alert(
+                    "Invalid room code."
+                );
+
+                return;
+
+            }
+
+
+            roomCode = joinedRoom;
+
+            isHost = false;
+
+
+            /*
+               Save current story before
+               moving to Jam page.
+            */
+
+            saveJamStory();
+
+
+            console.log(
+                "👥 Room joined:",
+                joinedRoom
+            );
+
+
+            /*
+               IMPORTANT:
+               Move to REAL NEW PAGE.
+            */
+
+            goToJamPage(
+                joinedRoom,
+                false
+            );
+
+        }
+    );
+
+
+    /* =========================================
+       ROOM ERROR
+    ========================================= */
+
+    socket.on(
+        "room-error",
+        function (message) {
+
+            alert(
+                message ||
+                "Room not found!"
+            );
+
+        }
+    );
+
+
+    /* =========================================
+       USER COUNT
+    ========================================= */
+
+    socket.on(
+        "user-count",
+        function (data) {
+
+            const count =
+                typeof data === "object"
+                    ? data.count
+                    : data;
+
+
+            updateUserCount(count);
+
+        }
+    );
+
+
+    /* =========================================
+       REMOTE PLAY
+    ========================================= */
+
+    socket.on(
+        "sync-play",
+        function (data) {
+
+            if (!data) {
+
+                return;
+
+            }
+
+            applyRemotePlay(
+                Number(data.currentTime) || 0
+            );
+
+        }
+    );
+
+
+    /* =========================================
+       REMOTE PAUSE
+    ========================================= */
+
+    socket.on(
+        "sync-pause",
+        function (data) {
+
+            if (!data) {
+
+                return;
+
+            }
+
+            applyRemotePause(
+                Number(data.currentTime) || 0
+            );
+
+        }
+    );
+
+
+    /* =========================================
+       REMOTE SEEK
+    ========================================= */
+
+    socket.on(
+        "sync-seek",
+        function (data) {
+
+            if (!data) {
+
+                return;
+
+            }
+
+            applyRemoteSeek(
+                Number(data.currentTime) || 0
+            );
+
+        }
+    );
+
+
+    /* =========================================
+       REMOTE REACTION
+    ========================================= */
+
+    socket.on(
+        "sync-reaction",
+        function (data) {
+
+            if (!data) {
+
+                return;
+
+            }
+
+            showReaction(data.emoji);
+
+        }
+    );
+
+
+    /* =========================================
+       CHAT
+    ========================================= */
+
+    socket.on(
+        "new-chat-message",
+        function (data) {
+
+            if (!data) {
+
+                return;
+
+            }
+
+            addChatMessage(
+                data.message || "",
+                "Listener"
+            );
+
+        }
+    );
+
+
+    /* =========================================
+       DISCONNECT
+    ========================================= */
+
+    socket.on(
+        "disconnect",
+        function () {
+
+            console.log(
+                "🔴 Disconnected from server."
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   GO TO JAM PAGE
+========================================================= */
+
+function goToJamPage(
+    code,
+    host
+) {
+
+    const cleanCode =
+        String(code || "")
+            .trim()
+            .toUpperCase();
+
+
+    if (cleanCode.length !== 6) {
+
+        alert(
+            "Invalid Jam room code."
+        );
+
+        return;
 
     }
 
 
-    if (fullDuration) {
+    saveJamStory();
 
-        fullDuration.textContent =
-            formatTime(duration);
+
+    let url =
+        `${JAM_PAGE}?room=${encodeURIComponent(cleanCode)}`;
+
+
+    if (host) {
+
+        url += "&host=1";
+
+    }
+
+
+    console.log(
+        "➡️ Opening Jam page:",
+        url
+    );
+
+
+    window.location.href =
+        url;
+
+}
+
+
+/* =========================================================
+   CREATE ROOM
+========================================================= */
+
+function createRoom() {
+
+    if (!socket) {
+
+        alert(
+            "Backend connection unavailable."
+        );
+
+        return;
+
+    }
+
+
+    if (!socket.connected) {
+
+        alert(
+            "Connecting to SleepStory server. Please wait a moment."
+        );
+
+        return;
+
+    }
+
+
+    /*
+       Backend expects:
+
+       socket.emit("create-room")
+
+       It returns:
+
+       room-created
+    */
+
+    saveJamStory();
+
+
+    socket.emit(
+        "create-room"
+    );
+
+
+    console.log(
+        "🌙 Creating Jam..."
+    );
+
+}
+
+
+/* =========================================================
+   JOIN ROOM
+========================================================= */
+
+function joinRoom() {
+
+    const modal =
+        document.getElementById("roomModal");
+
+
+    /*
+       First click:
+       open Join modal.
+    */
+
+    if (
+        !modal ||
+        modal.style.display !== "flex"
+    ) {
+
+        showRoomModal(false);
+
+        return;
+
+    }
+
+
+    const input =
+        document.getElementById("joinCode");
+
+
+    if (!input) {
+
+        return;
+
+    }
+
+
+    const code =
+        input.value
+            .trim()
+            .toUpperCase();
+
+
+    if (code.length !== 6) {
+
+        alert(
+            "Please enter a valid 6-character room code."
+        );
+
+        return;
+
+    }
+
+
+    if (!socket) {
+
+        alert(
+            "Backend connection unavailable."
+        );
+
+        return;
+
+    }
+
+
+    if (!socket.connected) {
+
+        alert(
+            "Connecting to SleepStory server. Please wait a moment."
+        );
+
+        return;
+
+    }
+
+
+    pendingJoinRoom = code;
+
+
+    /*
+       Backend expects STRING.
+
+       NOT:
+
+       { roomCode: code }
+    */
+
+    socket.emit(
+        "join-room",
+        code
+    );
+
+
+    console.log(
+        "👥 Joining Jam:",
+        code
+    );
+
+}
+
+
+/* =========================================================
+   SHOW ROOM MODAL
+========================================================= */
+
+function showRoomModal(
+    creating
+) {
+
+    const modal =
+        document.getElementById("roomModal");
+
+    const title =
+        document.getElementById("modalTitle");
+
+    const text =
+        document.getElementById("modalText");
+
+    const roomCodeElement =
+        document.getElementById("roomCode");
+
+    const input =
+        document.getElementById("joinCode");
+
+    const action =
+        document.getElementById("modalAction");
+
+
+    if (!modal) {
+
+        return;
+
+    }
+
+
+    modal.style.display = "flex";
+
+
+    if (creating) {
+
+        if (title) {
+
+            title.textContent =
+                "Create a Jam";
+
+        }
+
+        if (text) {
+
+            text.textContent =
+                "Creating your private listening room...";
+
+        }
+
+        if (roomCodeElement) {
+
+            roomCodeElement.style.display =
+                "block";
+
+            roomCodeElement.textContent =
+                "------";
+
+        }
+
+        if (input) {
+
+            input.style.display =
+                "none";
+
+        }
+
+        if (action) {
+
+            action.style.display =
+                "none";
+
+        }
+
+    } else {
+
+        if (title) {
+
+            title.textContent =
+                "Join a Jam";
+
+        }
+
+        if (text) {
+
+            text.textContent =
+                "Enter the 6-character code shared by your friend.";
+
+        }
+
+        if (roomCodeElement) {
+
+            roomCodeElement.style.display =
+                "none";
+
+        }
+
+        if (input) {
+
+            input.style.display =
+                "block";
+
+            input.value =
+                "";
+
+            setTimeout(
+                function () {
+
+                    input.focus();
+
+                },
+                100
+            );
+
+        }
+
+        if (action) {
+
+            action.style.display =
+                "block";
+
+            action.textContent =
+                "Join Room";
+
+        }
 
     }
 
@@ -793,82 +1103,161 @@ function updateDuration() {
 
 
 /* =========================================================
-   UPDATE PROGRESS
+   CLOSE ROOM MODAL
 ========================================================= */
 
-function updateProgress() {
+function closeModal() {
 
-    if (!audioPlayer) {
+    const modal =
+        document.getElementById("roomModal");
+
+
+    if (!modal) {
 
         return;
 
     }
 
 
-    const current =
-        audioPlayer.currentTime;
-
-
-    const duration =
-        audioPlayer.duration;
-
-
-    if (currentTimeElement) {
-
-        currentTimeElement.textContent =
-            formatTime(current);
-
-    }
-
-
-    if (fullCurrentTime) {
-
-        fullCurrentTime.textContent =
-            formatTime(current);
-
-    }
-
-
-    if (
-        progressBar &&
-        duration > 0
-    ) {
-
-        progressBar.value =
-            (
-                current /
-                duration
-            ) * 100;
-
-    }
-
-
-    if (
-        fullProgressBar &&
-        duration > 0
-    ) {
-
-        fullProgressBar.value =
-            (
-                current /
-                duration
-            ) * 100;
-
-    }
+    modal.style.display =
+        "none";
 
 }
 
 
 /* =========================================================
-   PLAY LOCAL STORY
+   JAM CHOICE
 ========================================================= */
 
-function playLocalStory(story) {
+function openJamChoice() {
+
+    const modal =
+        document.getElementById("jamChoiceModal");
+
+
+    if (!modal) {
+
+        return;
+
+    }
+
+
+    modal.style.display =
+        "flex";
+
+}
+
+
+function closeJamChoice() {
+
+    const modal =
+        document.getElementById("jamChoiceModal");
+
+
+    if (!modal) {
+
+        return;
+
+    }
+
+
+    modal.style.display =
+        "none";
+
+}
+
+
+/* =========================================================
+   STORY PLAY
+========================================================= */
+
+function playStory(
+    story
+) {
+
+    let selectedStory =
+        story;
+
 
     if (
-        !audioPlayer ||
-        !story
+        typeof story === "string"
     ) {
+
+        selectedStory =
+            stories.find(
+                function (item) {
+
+                    return (
+                        item.title === story
+                    );
+
+                }
+            );
+
+    }
+
+
+    if (!selectedStory) {
+
+        console.warn(
+            "Story not found:",
+            story
+        );
+
+        return;
+
+    }
+
+
+    currentStory =
+        selectedStory;
+
+
+    updateStoryInfo(
+        selectedStory
+    );
+
+
+    saveLastStory(
+        selectedStory
+    );
+
+
+    saveJamStory();
+
+
+    if (
+        selectedStory.type ===
+        "youtube"
+    ) {
+
+        playYouTubeStory(
+            selectedStory
+        );
+
+    } else {
+
+        playLocalStory(
+            selectedStory
+        );
+
+    }
+
+
+    openFullPlayer();
+
+}
+
+
+/* =========================================================
+   LOCAL STORY
+========================================================= */
+
+function playLocalStory(
+    story
+) {
+
+    if (!audioPlayer) {
 
         return;
 
@@ -877,20 +1266,6 @@ function playLocalStory(story) {
 
     youtubeStoryActive =
         false;
-
-
-    const youtubeContainer =
-        document.getElementById(
-            "youtubePlayerContainer"
-        );
-
-
-    if (youtubeContainer) {
-
-        youtubeContainer.style.display =
-            "none";
-
-    }
 
 
     if (
@@ -902,40 +1277,20 @@ function playLocalStory(story) {
 
             suppressJamEvents = true;
 
-            youtubePlayer.stopVideo();
-
-        } catch (error) {
-
-            console.log(error);
-
-        } finally {
+            youtubePlayer.pauseVideo();
 
             setTimeout(
                 function () {
 
-                    suppressJamEvents =
-                        false;
+                    suppressJamEvents = false;
 
                 },
-                300
+                200
             );
 
-        }
+        } catch (error) {}
 
     }
-
-
-    currentStory =
-        story;
-
-
-    updateStoryInfo(
-        story
-    );
-
-
-    suppressJamEvents =
-        true;
 
 
     audioPlayer.src =
@@ -945,35 +1300,12 @@ function playLocalStory(story) {
     audioPlayer.load();
 
 
-    audioPlayer.currentTime =
-        0;
-
-
     audioPlayer.play()
-        .then(
-            function () {
-
-                suppressJamEvents =
-                    false;
-
-
-                updatePlayButtons(
-                    true
-                );
-
-
-                syncStoryToJam();
-
-            }
-        )
         .catch(
             function (error) {
 
-                suppressJamEvents =
-                    false;
-
                 console.log(
-                    "Autoplay blocked:",
+                    "Playback waiting for user interaction:",
                     error
                 );
 
@@ -984,41 +1316,22 @@ function playLocalStory(story) {
 
 
 /* =========================================================
-   PLAY YOUTUBE STORY
+   YOUTUBE STORY
 ========================================================= */
 
-function playYouTubeStory(story) {
-
-    if (!story) {
-
-        return;
-
-    }
-
+function playYouTubeStory(
+    story
+) {
 
     if (!story.videoId) {
 
-        alert(
-            "এই category-তে এখনও কোনো YouTube story যোগ করা হয়নি।"
-        );
-
         return;
 
     }
 
 
-    if (
-        !youtubePlayer ||
-        !youtubeReady
-    ) {
-
-        alert(
-            "YouTube player is still loading. Please try again."
-        );
-
-        return;
-
-    }
+    youtubeStoryActive =
+        true;
 
 
     if (audioPlayer) {
@@ -1028,105 +1341,34 @@ function playYouTubeStory(story) {
 
         audioPlayer.pause();
 
-        suppressJamEvents =
-            false;
+        setTimeout(
+            function () {
 
-    }
+                suppressJamEvents =
+                    false;
 
-
-    youtubeStoryActive =
-        true;
-
-
-    currentStory =
-        story;
-
-
-    updateStoryInfo(
-        story
-    );
-
-
-    const youtubeContainer =
-        document.getElementById(
-            "youtubePlayerContainer"
+            },
+            200
         );
-
-
-    if (youtubeContainer) {
-
-        youtubeContainer.style.display =
-            "block";
-
-    }
-
-
-    suppressJamEvents =
-        true;
-
-
-    youtubePlayer.loadVideoById(
-        story.videoId
-    );
-
-
-    setTimeout(
-        function () {
-
-            suppressJamEvents =
-                false;
-
-        },
-        1000
-    );
-
-
-    if (youtubeContainer) {
-
-        youtubeContainer.scrollIntoView({
-
-            behavior:
-                "smooth",
-
-            block:
-                "center"
-
-        });
-
-    }
-
-
-    syncStoryToJam();
-
-}
-
-
-/* =========================================================
-   PLAY STORY
-========================================================= */
-
-function playStory(story) {
-
-    if (!story) {
-
-        return;
 
     }
 
 
     if (
-        story.type ===
-        "youtube"
+        youtubePlayer &&
+        youtubeReady
     ) {
 
-        playYouTubeStory(
-            story
+        youtubePlayer.loadVideoById(
+            story.videoId
         );
+
+        youtubePlayer.playVideo();
 
     } else {
 
-        playLocalStory(
-            story
+        console.log(
+            "Waiting for YouTube API..."
         );
 
     }
@@ -1138,7 +1380,9 @@ function playStory(story) {
    UPDATE STORY INFO
 ========================================================= */
 
-function updateStoryInfo(story) {
+function updateStoryInfo(
+    story
+) {
 
     if (!story) {
 
@@ -1150,7 +1394,8 @@ function updateStoryInfo(story) {
     if (playerTitle) {
 
         playerTitle.textContent =
-            story.title;
+            story.title ||
+            "SleepStory";
 
     }
 
@@ -1158,7 +1403,31 @@ function updateStoryInfo(story) {
     if (fullPlayerTitle) {
 
         fullPlayerTitle.textContent =
-            story.title;
+            story.title ||
+            "SleepStory";
+
+    }
+
+
+    const fullRoomInfo =
+        document.getElementById(
+            "fullPlayerRoomInfo"
+        );
+
+
+    if (fullRoomInfo) {
+
+        if (roomCode) {
+
+            fullRoomInfo.textContent =
+                `ROOM ${roomCode}`;
+
+        } else {
+
+            fullRoomInfo.textContent =
+                "";
+
+        }
 
     }
 
@@ -1179,10 +1448,6 @@ function togglePlay() {
 
         const state =
             youtubePlayer.getPlayerState();
-
-
-        suppressJamEvents =
-            false;
 
 
         if (
@@ -1217,9 +1482,7 @@ function togglePlay() {
             .catch(
                 function (error) {
 
-                    console.error(
-                        error
-                    );
+                    console.error(error);
 
                 }
             );
@@ -1238,27 +1501,25 @@ function togglePlay() {
 ========================================================= */
 
 function updatePlayButtons(
-    isPlaying
+    playing
 ) {
 
-    const icon =
-        isPlaying
-            ? "❚❚"
-            : "▶";
+    if (playButton) {
+
+        playButton.textContent =
+            playing
+                ? "❚❚"
+                : "▶";
+
+    }
 
 
     if (fullPlayButton) {
 
         fullPlayButton.textContent =
-            icon;
-
-    }
-
-
-    if (playButton) {
-
-        playButton.textContent =
-            icon;
+            playing
+                ? "❚❚"
+                : "▶";
 
     }
 
@@ -1266,12 +1527,12 @@ function updatePlayButtons(
 
 
 /* =========================================================
-   LOCAL PROGRESS
+   PROGRESS
 ========================================================= */
 
 function changeProgress() {
 
-    if (!audioPlayer) {
+    if (!progressBar) {
 
         return;
 
@@ -1279,10 +1540,13 @@ function changeProgress() {
 
 
     const duration =
-        audioPlayer.duration;
+        getCurrentDuration();
 
 
-    if (!duration) {
+    if (
+        !duration ||
+        !Number.isFinite(duration)
+    ) {
 
         return;
 
@@ -1290,21 +1554,56 @@ function changeProgress() {
 
 
     const percentage =
-        Number(
-            progressBar.value
-        );
+        Number(progressBar.value);
 
 
-    const time =
+    const newTime =
         (
-            percentage /
-            100
+            percentage / 100
         ) * duration;
 
 
-    audioPlayer.currentTime =
-        time;
+    setCurrentTime(newTime);
 
+    syncJamSeek();
+
+}
+
+
+function changeProgressFull() {
+
+    if (!fullProgressBar) {
+
+        return;
+
+    }
+
+
+    const duration =
+        getCurrentDuration();
+
+
+    if (
+        !duration ||
+        !Number.isFinite(duration)
+    ) {
+
+        return;
+
+    }
+
+
+    const percentage =
+        Number(fullProgressBar.value);
+
+
+    const newTime =
+        (
+            percentage / 100
+        ) * duration;
+
+
+    setCurrentTime(newTime);
 
     syncJamSeek();
 
@@ -1312,47 +1611,263 @@ function changeProgress() {
 
 
 /* =========================================================
-   FULL PROGRESS
+   CURRENT TIME
 ========================================================= */
 
-function changeProgressFull() {
+function getCurrentTime() {
 
-    if (!audioPlayer) {
+    if (
+        youtubeStoryActive &&
+        youtubePlayer &&
+        youtubeReady
+    ) {
 
-        return;
+        try {
+
+            return Number(
+                youtubePlayer.getCurrentTime()
+            ) || 0;
+
+        } catch (error) {
+
+            return 0;
+
+        }
 
     }
+
+
+    return Number(
+        audioPlayer?.currentTime
+    ) || 0;
+
+}
+
+
+/* =========================================================
+   SET CURRENT TIME
+========================================================= */
+
+function setCurrentTime(
+    time
+) {
+
+    suppressJamEvents =
+        true;
+
+
+    if (
+        youtubeStoryActive &&
+        youtubePlayer &&
+        youtubeReady
+    ) {
+
+        try {
+
+            youtubePlayer.seekTo(
+                time,
+                true
+            );
+
+        } catch (error) {}
+
+    } else if (audioPlayer) {
+
+        audioPlayer.currentTime =
+            time;
+
+    }
+
+
+    setTimeout(
+        function () {
+
+            suppressJamEvents =
+                false;
+
+        },
+        150
+    );
+
+}
+
+
+/* =========================================================
+   DURATION
+========================================================= */
+
+function getCurrentDuration() {
+
+    if (
+        youtubeStoryActive &&
+        youtubePlayer &&
+        youtubeReady
+    ) {
+
+        try {
+
+            return Number(
+                youtubePlayer.getDuration()
+            ) || 0;
+
+        } catch (error) {
+
+            return 0;
+
+        }
+
+    }
+
+
+    return Number(
+        audioPlayer?.duration
+    ) || 0;
+
+}
+
+
+/* =========================================================
+   UPDATE PROGRESS
+========================================================= */
+
+function updateProgress() {
+
+    const current =
+        getCurrentTime();
 
 
     const duration =
-        audioPlayer.duration;
+        getCurrentDuration();
 
 
-    if (!duration) {
+    if (currentTimeElement) {
 
-        return;
+        currentTimeElement.textContent =
+            formatTime(current);
 
     }
 
 
-    const percentage =
-        Number(
-            fullProgressBar.value
+    if (fullCurrentTime) {
+
+        fullCurrentTime.textContent =
+            formatTime(current);
+
+    }
+
+
+    if (durationElement) {
+
+        durationElement.textContent =
+            formatTime(duration);
+
+    }
+
+
+    if (fullDuration) {
+
+        fullDuration.textContent =
+            formatTime(duration);
+
+    }
+
+
+    if (duration > 0) {
+
+        const percentage =
+            (
+                current / duration
+            ) * 100;
+
+
+        if (progressBar) {
+
+            progressBar.value =
+                percentage;
+
+        }
+
+
+        if (fullProgressBar) {
+
+            fullProgressBar.value =
+                percentage;
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   UPDATE DURATION
+========================================================= */
+
+function updateDuration() {
+
+    const duration =
+        getCurrentDuration();
+
+
+    if (durationElement) {
+
+        durationElement.textContent =
+            formatTime(duration);
+
+    }
+
+
+    if (fullDuration) {
+
+        fullDuration.textContent =
+            formatTime(duration);
+
+    }
+
+}
+
+
+/* =========================================================
+   FORMAT TIME
+========================================================= */
+
+function formatTime(
+    seconds
+) {
+
+    const number =
+        Number(seconds);
+
+
+    if (
+        !Number.isFinite(number) ||
+        number < 0
+    ) {
+
+        return "0:00";
+
+    }
+
+
+    const minutes =
+        Math.floor(
+            number / 60
         );
 
 
-    const time =
-        (
-            percentage /
-            100
-        ) * duration;
+    const secs =
+        Math.floor(
+            number % 60
+        );
 
 
-    audioPlayer.currentTime =
-        time;
-
-
-    syncJamSeek();
+    return (
+        minutes +
+        ":" +
+        String(secs)
+            .padStart(2, "0")
+    );
 
 }
 
@@ -1373,6 +1888,24 @@ function toggleMute() {
     audioPlayer.muted =
         !audioPlayer.muted;
 
+
+    const buttons =
+        document.querySelectorAll(
+            '[onclick="toggleMute()"]'
+        );
+
+
+    buttons.forEach(
+        function (button) {
+
+            button.textContent =
+                audioPlayer.muted
+                    ? "🔇"
+                    : "🔊";
+
+        }
+    );
+
 }
 
 
@@ -1380,7 +1913,8 @@ function toggleMute() {
    SLEEP TIMER
 ========================================================= */
 
-let sleepTimerTimeout = null;
+let sleepTimerTimeout =
+    null;
 
 
 function setSleepTimer() {
@@ -1398,22 +1932,17 @@ function setSleepTimer() {
     }
 
 
-    const minutes =
-        Number(
-            select.value
-        );
-
-
     if (sleepTimerTimeout) {
 
         clearTimeout(
             sleepTimerTimeout
         );
 
-        sleepTimerTimeout =
-            null;
-
     }
+
+
+    const minutes =
+        Number(select.value);
 
 
     if (minutes === 0) {
@@ -1426,10 +1955,6 @@ function setSleepTimer() {
     sleepTimerTimeout =
         setTimeout(
             function () {
-
-                suppressJamEvents =
-                    false;
-
 
                 if (
                     youtubeStoryActive &&
@@ -1446,8 +1971,7 @@ function setSleepTimer() {
                 }
 
 
-                select.value =
-                    "0";
+                select.value = "0";
 
 
                 alert(
@@ -1455,10 +1979,235 @@ function setSleepTimer() {
                 );
 
             },
-            minutes *
-            60 *
-            1000
+            minutes * 60 * 1000
         );
+
+}
+
+
+/* =========================================================
+   FULL PLAYER
+========================================================= */
+
+function openFullPlayer() {
+
+    if (!fullPlayer) {
+
+        return;
+
+    }
+
+
+    fullPlayer.classList.add("active");
+
+    fullPlayer.style.display =
+        "flex";
+
+
+    updateStoryInfo(
+        currentStory
+    );
+
+
+    updateProgress();
+
+}
+
+
+function closeFullPlayer() {
+
+    if (!fullPlayer) {
+
+        return;
+
+    }
+
+
+    fullPlayer.classList.remove("active");
+
+    fullPlayer.style.display =
+        "none";
+
+}
+
+
+/* =========================================================
+   CATEGORY
+========================================================= */
+
+function openCategory(
+    category
+) {
+
+    const modal =
+        document.getElementById(
+            "categoryModal"
+        );
+
+    const title =
+        document.getElementById(
+            "categoryTitle"
+        );
+
+    const library =
+        document.getElementById(
+            "storyLibrary"
+        );
+
+
+    if (!modal || !library) {
+
+        return;
+
+    }
+
+
+    currentCategoryStories =
+        stories.filter(
+            function (story) {
+
+                return (
+                    story.category ===
+                    category
+                );
+
+            }
+        );
+
+
+    currentStoryIndex = 0;
+
+
+    if (title) {
+
+        title.textContent =
+            category;
+
+    }
+
+
+    library.innerHTML = "";
+
+
+    if (
+        currentCategoryStories.length === 0
+    ) {
+
+        library.innerHTML = `
+            <div class="empty-state">
+                No stories available yet.
+            </div>
+        `;
+
+    } else {
+
+        currentCategoryStories.forEach(
+            function (story, index) {
+
+                const item =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                item.className =
+                    "story-library-item";
+
+
+                item.innerHTML = `
+
+                    <div class="story-library-info">
+
+                        <h3>
+                            ${escapeHTML(
+                                story.title
+                            )}
+                        </h3>
+
+                        <p>
+                            ${escapeHTML(
+                                story.description ||
+                                story.category
+                            )}
+                        </p>
+
+                    </div>
+
+                    <button
+                        class="play-library-btn"
+                        onclick="playCategoryStory(${index})"
+                    >
+                        ▶
+                    </button>
+
+                `;
+
+
+                library.appendChild(item);
+
+            }
+        );
+
+    }
+
+
+    modal.style.display =
+        "flex";
+
+}
+
+
+/* =========================================================
+   CATEGORY STORY PLAY
+========================================================= */
+
+function playCategoryStory(
+    index
+) {
+
+    if (!currentCategoryStories[index]) {
+
+        return;
+
+    }
+
+
+    currentStoryIndex =
+        index;
+
+
+    const story =
+        currentCategoryStories[index];
+
+
+    playStory(story);
+
+    closeCategory();
+
+}
+
+
+/* =========================================================
+   CLOSE CATEGORY
+========================================================= */
+
+function closeCategory() {
+
+    const modal =
+        document.getElementById(
+            "categoryModal"
+        );
+
+
+    if (!modal) {
+
+        return;
+
+    }
+
+
+    modal.style.display =
+        "none";
 
 }
 
@@ -1481,21 +2230,16 @@ function previousStory() {
     currentStoryIndex--;
 
 
-    if (
-        currentStoryIndex < 0
-    ) {
+    if (currentStoryIndex < 0) {
 
         currentStoryIndex =
-            currentCategoryStories.length -
-            1;
+            currentCategoryStories.length - 1;
 
     }
 
 
-    playStory(
-        currentCategoryStories[
-            currentStoryIndex
-        ]
+    playCategoryStory(
+        currentStoryIndex
     );
 
 }
@@ -1524,16 +2268,13 @@ function nextStory() {
         currentCategoryStories.length
     ) {
 
-        currentStoryIndex =
-            0;
+        currentStoryIndex = 0;
 
     }
 
 
-    playStory(
-        currentCategoryStories[
-            currentStoryIndex
-        ]
+    playCategoryStory(
+        currentStoryIndex
     );
 
 }
@@ -1589,772 +2330,11 @@ function toggleSearch() {
 }
 
 
-function searchStories(query) {
-
-    if (
-        typeof query !==
-        "string"
-    ) {
-
-        const input =
-            document.getElementById(
-                "searchInput"
-            );
-
-
-        query =
-            input
-                ? input.value
-                : "";
-
-    }
-
-
-    query =
-        query
-            .trim()
-            .toLowerCase();
-
-
-    if (!query) {
-
-        return;
-
-    }
-
-
-    const category =
-        Object.keys(
-            storyCategories
-        ).find(
-            function (name) {
-
-                return name
-                    .toLowerCase()
-                    .includes(
-                        query
-                    );
-
-            }
-        );
-
-
-    if (category) {
-
-        openCategory(
-            category
-        );
-
-        return;
-
-    }
-
-
-    for (
-        const categoryName
-        of Object.keys(
-            storyCategories
-        )
-    ) {
-
-        const list =
-            storyCategories[
-                categoryName
-            ];
-
-
-        const index =
-            list.findIndex(
-                function (story) {
-
-                    return story.title
-                        .toLowerCase()
-                        .includes(
-                            query
-                        );
-
-                }
-            );
-
-
-        if (index !== -1) {
-
-            openCategory(
-                categoryName
-            );
-
-            return;
-
-        }
-
-    }
-
-
-    console.log(
-        "No story found:",
-        query
-    );
-
-}
-
-
-/* =========================================================
-   CATEGORY MODAL
-========================================================= */
-
-function openCategory(category) {
-
-    const modal =
-        document.getElementById(
-            "categoryModal"
-        );
-
-    const title =
-        document.getElementById(
-            "categoryTitle"
-        );
-
-    const library =
-        document.getElementById(
-            "storyLibrary"
-        );
-
-
-    if (
-        !modal ||
-        !title ||
-        !library
-    ) {
-
-        return;
-
-    }
-
-
-    title.textContent =
-        category;
-
-
-    library.innerHTML =
-        "";
-
-
-    const categoryStories =
-        storyCategories[
-            category
-        ] || [];
-
-
-    currentCategoryStories =
-        categoryStories;
-
-
-    currentStoryIndex =
-        0;
-
-
-    if (
-        categoryStories.length ===
-        0
-    ) {
-
-        library.innerHTML = `
-
-            <div class="story-library-item">
-
-                <div class="story-library-info">
-
-                    <h3>No stories yet</h3>
-
-                    <p>
-                        Stories will be added here soon.
-                    </p>
-
-                </div>
-
-            </div>
-
-        `;
-
-    } else {
-
-        categoryStories.forEach(
-            function (
-                story,
-                index
-            ) {
-
-                const item =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                item.className =
-                    "story-library-item";
-
-
-                let image =
-                    "🎧";
-
-
-                if (
-                    category ===
-                    "Horror Stories"
-                ) {
-
-                    image =
-                        "👻";
-
-                } else if (
-                    category ===
-                    "Love Stories"
-                ) {
-
-                    image =
-                        "❤️";
-
-                } else if (
-                    category ===
-                    "Mystery & Thriller"
-                ) {
-
-                    image =
-                        "🔍";
-
-                } else if (
-                    category ===
-                    "Crime Stories"
-                ) {
-
-                    image =
-                        "🕵️";
-
-                } else if (
-                    category ===
-                    "Bedtime Stories"
-                ) {
-
-                    image =
-                        "🌙";
-
-                }
-
-
-                item.innerHTML = `
-
-                    <div class="story-library-image">
-
-                        <div
-                            style="
-                                width:100%;
-                                height:100%;
-                                display:flex;
-                                align-items:center;
-                                justify-content:center;
-                                font-size:42px;
-                                background:linear-gradient(
-                                    135deg,
-                                    #111,
-                                    #252525
-                                );
-                            "
-                        >
-                            ${image}
-                        </div>
-
-                    </div>
-
-
-                    <div class="story-library-info">
-
-                        <h3>
-                            ${escapeHTML(
-                                story.title
-                            )}
-                        </h3>
-
-                        <p>
-                            ${escapeHTML(
-                                story.description ||
-                                "Audio story"
-                            )}
-                        </p>
-
-                        <div class="story-meta">
-
-                            <span>
-                                ${
-                                    story.type ===
-                                    "youtube"
-                                        ? "▶ YouTube"
-                                        : "🎧 Audio"
-                                }
-                            </span>
-
-                        </div>
-
-                    </div>
-
-
-                    <button
-                        class="story-library-play"
-                        onclick="
-                            playCategoryStory(
-                                '${escapeAttribute(
-                                    category
-                                )}',
-                                ${index}
-                            )
-                        "
-                    >
-                        ▶
-                    </button>
-
-                `;
-
-
-                library.appendChild(
-                    item
-                );
-
-            }
-        );
-
-    }
-
-
-    modal.style.display =
-        "flex";
-
-}
-
-
-/* =========================================================
-   PLAY CATEGORY STORY
-========================================================= */
-
-function playCategoryStory(
-    category,
-    index
-) {
-
-    const list =
-        storyCategories[
-            category
-        ];
-
-
-    if (
-        !list ||
-        !list[index]
-    ) {
-
-        return;
-
-    }
-
-
-    currentCategoryStories =
-        list;
-
-
-    currentStoryIndex =
-        index;
-
-
-    playStory(
-        list[index]
-    );
-
-
-    closeCategory();
-
-
-    openFullPlayer();
-
-}
-
-
-/* =========================================================
-   CLOSE CATEGORY
-========================================================= */
-
-function closeCategory() {
-
-    const modal =
-        document.getElementById(
-            "categoryModal"
-        );
-
-
-    if (modal) {
-
-        modal.style.display =
-            "none";
-
-    }
-
-}
-
-
-/* =========================================================
-   JAM — OPEN CHOICE
-========================================================= */
-
-function openJamChoice() {
-
-    const modal =
-        document.getElementById(
-            "jamChoiceModal"
-        );
-
-
-    if (modal) {
-
-        modal.style.display =
-            "flex";
-
-    }
-
-}
-
-
-function closeJamChoice() {
-
-    const modal =
-        document.getElementById(
-            "jamChoiceModal"
-        );
-
-
-    if (modal) {
-
-        modal.style.display =
-            "none";
-
-    }
-
-}
-
-
-/* =========================================================
-   JAM — CREATE ROOM
-========================================================= */
-
-function createRoom() {
-
-    if (!socket) {
-
-        alert(
-            "Backend connection unavailable."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        !socket.connected
-    ) {
-
-        alert(
-            "Connecting to SleepStory server. Please try again in a moment."
-        );
-
-        return;
-
-    }
-
-
-    socket.emit(
-        "create-room",
-        function (response) {
-
-            console.log(
-                "Create room response:",
-                response
-            );
-
-
-            if (
-                !response
-            ) {
-
-                alert(
-                    "Server did not return a room code."
-                );
-
-                return;
-
-            }
-
-
-            if (
-                response.success === false
-            ) {
-
-                alert(
-                    response.message ||
-                    "Could not create room."
-                );
-
-                return;
-
-            }
-
-
-            roomCode =
-                (
-                    response.roomCode ||
-                    response.code ||
-                    ""
-                )
-                    .toUpperCase();
-
-
-            if (
-                roomCode.length !==
-                6
-            ) {
-
-                alert(
-                    "Invalid room code received from server."
-                );
-
-                return;
-
-            }
-
-
-            isHost =
-                true;
-
-
-            console.log(
-                "🌙 Created Jam:",
-                roomCode
-            );
-
-
-            showRoomModal(
-                true
-            );
-
-
-            updateRoomInfo();
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   JAM — SHOW ROOM MODAL
-========================================================= */
-
-function showRoomModal(
-    isCreating
-) {
-
-    const modal =
-        document.getElementById(
-            "roomModal"
-        );
-
-    const title =
-        document.getElementById(
-            "modalTitle"
-        );
-
-    const text =
-        document.getElementById(
-            "modalText"
-        );
-
-    const code =
-        document.getElementById(
-            "roomCode"
-        );
+function searchStories() {
 
     const input =
         document.getElementById(
-            "joinCode"
-        );
-
-    const action =
-        document.getElementById(
-            "modalAction"
-        );
-
-
-    if (!modal) {
-
-        return;
-
-    }
-
-
-    if (isCreating) {
-
-        if (title) {
-
-            title.textContent =
-                "Your Jam Room";
-
-        }
-
-
-        if (text) {
-
-            text.textContent =
-                "Share this 6-character code with your friend.";
-
-        }
-
-
-        if (code) {
-
-            code.textContent =
-                roomCode ||
-                "------";
-
-        }
-
-
-        if (input) {
-
-            input.style.display =
-                "none";
-
-        }
-
-
-        if (action) {
-
-            action.textContent =
-                "Close";
-
-
-            action.onclick =
-                function () {
-
-                    closeModal();
-
-                };
-
-        }
-
-    } else {
-
-        if (title) {
-
-            title.textContent =
-                "Join a Jam";
-
-        }
-
-
-        if (text) {
-
-            text.textContent =
-                "Enter your friend's 6-character room code.";
-
-        }
-
-
-        if (code) {
-
-            code.textContent =
-                "------";
-
-        }
-
-
-        if (input) {
-
-            input.style.display =
-                "block";
-
-            input.value =
-                "";
-
-        }
-
-
-        if (action) {
-
-            action.textContent =
-                "Join Room";
-
-
-            action.onclick =
-                function () {
-
-                    joinRoom();
-
-                };
-
-        }
-
-    }
-
-
-    modal.style.display =
-        "flex";
-
-
-    if (
-        !isCreating &&
-        input
-    ) {
-
-        setTimeout(
-            function () {
-
-                input.focus();
-
-            },
-            100
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   JAM — JOIN ROOM
-========================================================= */
-
-function joinRoom() {
-
-    const modal =
-        document.getElementById(
-            "roomModal"
-        );
-
-
-    if (
-        !modal ||
-        modal.style.display !==
-        "flex"
-    ) {
-
-        showRoomModal(
-            false
-        );
-
-        return;
-
-    }
-
-
-    const input =
-        document.getElementById(
-            "joinCode"
+            "searchInput"
         );
 
 
@@ -2365,752 +2345,248 @@ function joinRoom() {
     }
 
 
-    const code =
+    const query =
         input.value
             .trim()
-            .toUpperCase();
+            .toLowerCase();
+
+
+    const cards =
+        document.querySelectorAll(
+            ".story-card"
+        );
+
+
+    cards.forEach(
+        function (card) {
+
+            const title =
+                (
+                    card.dataset.title ||
+                    card.textContent ||
+                    ""
+                )
+                    .toLowerCase();
+
+
+            card.style.display =
+                (
+                    !query ||
+                    title.includes(query)
+                )
+                    ? ""
+                    : "none";
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   MOOD
+========================================================= */
+
+function selectMood(
+    mood
+) {
+
+    console.log(
+        "Selected mood:",
+        mood
+    );
+
+
+    const normalized =
+        String(mood)
+            .toLowerCase();
+
+
+    const cards =
+        document.querySelectorAll(
+            ".story-card"
+        );
+
+
+    cards.forEach(
+        function (card) {
+
+            const text =
+                card.textContent
+                    .toLowerCase();
+
+
+            card.style.display =
+                text.includes(normalized)
+                    ? ""
+                    : "none";
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   REACTION
+========================================================= */
+
+function sendReaction(
+    emoji
+) {
+
+    if (!emoji) {
+
+        return;
+
+    }
+
+
+    showReaction(emoji);
 
 
     if (
-        code.length !==
-        6
+        socket &&
+        roomCode
     ) {
 
-        alert(
-            "Please enter a valid 6-character room code."
+        socket.emit(
+            "reaction",
+            {
+                emoji
+            }
         );
+
+    }
+
+}
+
+
+/* =========================================================
+   SHOW REACTION
+========================================================= */
+
+function showReaction(
+    emoji
+) {
+
+    const container =
+        document.getElementById(
+            "reactionContainer"
+        );
+
+
+    if (!container) {
 
         return;
 
     }
 
 
-    if (!socket) {
-
-        alert(
-            "Backend connection unavailable."
+    const element =
+        document.createElement(
+            "div"
         );
 
-        return;
 
-    }
-
-
-    if (
-        !socket.connected
-    ) {
-
-        alert(
-            "Connecting to SleepStory server. Please wait a moment."
-        );
-
-        return;
-
-    }
+    element.className =
+        "floating-reaction";
 
 
-    socket.emit(
-        "join-room",
-        {
-            roomCode:
-                code
+    element.textContent =
+        emoji;
+
+
+    element.style.position =
+        "fixed";
+
+    element.style.left =
+        (
+            Math.random() * 80 + 10
+        ) + "%";
+
+    element.style.bottom =
+        "90px";
+
+    element.style.zIndex =
+        "99999";
+
+    element.style.fontSize =
+        "30px";
+
+    element.style.pointerEvents =
+        "none";
+
+    element.style.transition =
+        "transform 2s ease, opacity 2s ease";
+
+    element.style.opacity =
+        "1";
+
+
+    container.appendChild(
+        element
+    );
+
+
+    requestAnimationFrame(
+        function () {
+
+            element.style.transform =
+                "translateY(-180px) scale(1.4)";
+
+            element.style.opacity =
+                "0";
+
+        }
+    );
+
+
+    setTimeout(
+        function () {
+
+            element.remove();
+
         },
-        function (response) {
-
-            console.log(
-                "Join room response:",
-                response
-            );
-
-
-            if (
-                !response
-            ) {
-
-                alert(
-                    "Server did not respond."
-                );
-
-                return;
-
-            }
-
-
-            if (
-                response.success ===
-                false
-            ) {
-
-                alert(
-                    response.message ||
-                    "Could not join room."
-                );
-
-                return;
-
-            }
-
-
-            roomCode =
-                (
-                    response.roomCode ||
-                    code
-                )
-                    .toUpperCase();
-
-
-            isHost =
-                false;
-
-
-            updateRoomInfo();
-
-
-            /*
-               Room state will also arrive
-               through room-joined event.
-            */
-
-            applyJamRoomState(
-                response
-            );
-
-
-            showRoomModal(
-                true
-            );
-
-        }
+        2200
     );
 
 }
 
 
 /* =========================================================
-   CLOSE ROOM MODAL
+   CHAT SETUP
 ========================================================= */
 
-function closeModal() {
+function setupChat() {
 
-    const modal =
+    const input =
         document.getElementById(
-            "roomModal"
+            "chatInput"
         );
 
 
-    if (modal) {
-
-        modal.style.display =
-            "none";
-
-    }
-
-}
-
-
-/* =========================================================
-   ROOM INFO
-========================================================= */
-
-function updateRoomInfo() {
-
-    const info =
-        document.getElementById(
-            "fullPlayerRoomInfo"
-        );
-
-
-    if (!info) {
+    if (!input) {
 
         return;
 
     }
 
 
-    if (roomCode) {
-
-        info.textContent =
-            `Jam: ${roomCode}`;
-
-    } else {
-
-        info.textContent =
-            "";
-
-    }
-
-}
-
-
-/* =========================================================
-   SEND STORY TO JAM
-========================================================= */
-
-function syncStoryToJam() {
-
-    if (
-        !socket ||
-        !roomCode ||
-        !currentStory
-    ) {
-
-        return;
-
-    }
-
-
-    socket.emit(
-        "story-change",
-        {
-
-            story: {
-
-                title:
-                    currentStory.title,
-
-                type:
-                    currentStory.type,
-
-                src:
-                    currentStory.src ||
-                    null,
-
-                videoId:
-                    currentStory.videoId ||
-                    null
-
-            }
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   JAM PLAY
-========================================================= */
-
-function syncJamPlay() {
-
-    if (
-        suppressJamEvents
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        !socket ||
-        !roomCode
-    ) {
-
-        return;
-
-    }
-
-
-    let currentTime =
-        0;
-
-
-    if (
-        youtubeStoryActive &&
-        youtubePlayer &&
-        youtubeReady
-    ) {
-
-        currentTime =
-            Number(
-                youtubePlayer.getCurrentTime()
-            ) || 0;
-
-    } else if (
-        audioPlayer
-    ) {
-
-        currentTime =
-            Number(
-                audioPlayer.currentTime
-            ) || 0;
-
-    }
-
-
-    socket.emit(
-        "play",
-        {
-
-            currentTime:
-                currentTime
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   JAM PAUSE
-========================================================= */
-
-function syncJamPause() {
-
-    if (
-        suppressJamEvents
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        !socket ||
-        !roomCode
-    ) {
-
-        return;
-
-    }
-
-
-    let currentTime =
-        0;
-
-
-    if (
-        youtubeStoryActive &&
-        youtubePlayer &&
-        youtubeReady
-    ) {
-
-        currentTime =
-            Number(
-                youtubePlayer.getCurrentTime()
-            ) || 0;
-
-    } else if (
-        audioPlayer
-    ) {
-
-        currentTime =
-            Number(
-                audioPlayer.currentTime
-            ) || 0;
-
-    }
-
-
-    socket.emit(
-        "pause",
-        {
-
-            currentTime:
-                currentTime
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   JAM SEEK
-========================================================= */
-
-function syncJamSeek() {
-
-    if (
-        suppressJamEvents
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        !socket ||
-        !roomCode
-    ) {
-
-        return;
-
-    }
-
-
-    let currentTime =
-        0;
-
-
-    if (
-        youtubeStoryActive &&
-        youtubePlayer &&
-        youtubeReady
-    ) {
-
-        currentTime =
-            Number(
-                youtubePlayer.getCurrentTime()
-            ) || 0;
-
-    } else if (
-        audioPlayer
-    ) {
-
-        currentTime =
-            Number(
-                audioPlayer.currentTime
-            ) || 0;
-
-    }
-
-
-    socket.emit(
-        "seek",
-        {
-
-            currentTime:
-                currentTime
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   SOCKET EVENTS
-========================================================= */
-
-function setupSocketEvents() {
-
-    if (!socket) {
-
-        return;
-
-    }
-
-
-    /* -----------------------------------------------------
-       CONNECT
-    ----------------------------------------------------- */
-
-    socket.on(
-        "connect",
-        function () {
-
-            console.log(
-                "🟢 Connected to SleepStory:",
-                socket.id
-            );
-
-        }
-    );
-
-
-    /* -----------------------------------------------------
-       CONNECT ERROR
-    ----------------------------------------------------- */
-
-    socket.on(
-        "connect_error",
-        function (error) {
-
-            console.error(
-                "🔴 Socket connection error:",
-                error.message
-            );
-
-        }
-    );
-
-
-    /* -----------------------------------------------------
-       ROOM CREATED
-    ----------------------------------------------------- */
-
-    socket.on(
-        "room-created",
-        function (data) {
-
-            if (!data) {
-
-                return;
-
-            }
-
-
-            roomCode =
-                (
-                    data.roomCode ||
-                    data.code ||
-                    roomCode
-                )
-                    .toUpperCase();
-
-
-            isHost =
-                true;
-
-
-            updateRoomInfo();
-
-        }
-    );
-
-
-    /* -----------------------------------------------------
-       ROOM JOINED
-    ----------------------------------------------------- */
-
-    socket.on(
-        "room-joined",
-        function (data) {
-
-            if (!data) {
-
-                return;
-
-            }
-
-
-            roomCode =
-                (
-                    data.roomCode ||
-                    roomCode
-                )
-                    .toUpperCase();
-
-
-            isHost =
-                false;
-
-
-            updateRoomInfo();
-
-
-            applyJamRoomState(
-                data
-            );
-
-        }
-    );
-
-
-    /* -----------------------------------------------------
-       ROOM ERROR
-    ----------------------------------------------------- */
-
-    socket.on(
-        "room-error",
-        function (message) {
-
-            alert(
-                message ||
-                "Room error."
-            );
-
-        }
-    );
-
-
-    /* -----------------------------------------------------
-       SYNC PLAY
-    ----------------------------------------------------- */
-
-    socket.on(
-        "sync-play",
-        function (data) {
-
-            if (!data) {
-
-                return;
-
-            }
-
-
-            const time =
-                Number(
-                    data.currentTime
-                ) || 0;
-
-
-            applyRemotePlay(
-                time
-            );
-
-        }
-    );
-
-
-    /* -----------------------------------------------------
-       SYNC PAUSE
-    ----------------------------------------------------- */
-
-    socket.on(
-        "sync-pause",
-        function (data) {
-
-            if (!data) {
-
-                return;
-
-            }
-
-
-            const time =
-                Number(
-                    data.currentTime
-                ) || 0;
-
-
-            applyRemotePause(
-                time
-            );
-
-        }
-    );
-
-
-    /* -----------------------------------------------------
-       SYNC SEEK
-    ----------------------------------------------------- */
-
-    socket.on(
-        "sync-seek",
-        function (data) {
-
-            if (!data) {
-
-                return;
-
-            }
-
-
-            const time =
-                Number(
-                    data.currentTime
-                ) || 0;
-
-
-            applyRemoteSeek(
-                time
-            );
-
-        }
-    );
-
-
-    /* -----------------------------------------------------
-       SYNC STORY
-    ----------------------------------------------------- */
-
-    socket.on(
-        "sync-story",
-        function (data) {
-
-            if (!data) {
-
-                return;
-
-            }
-
+    input.addEventListener(
+        "keydown",
+        function (event) {
 
             if (
-                data.story
+                event.key ===
+                "Enter"
             ) {
 
-                applyRemoteStory(
-                    data.story,
-                    data.currentTime || 0,
-                    data.isPlaying || false
-                );
+                event.preventDefault();
+
+                sendChatMessage();
 
             }
-
-        }
-    );
-
-
-    /* -----------------------------------------------------
-       USER COUNT
-    ----------------------------------------------------- */
-
-    socket.on(
-        "user-count",
-        function (count) {
-
-            updateUserCount(
-                count
-            );
-
-        }
-    );
-
-
-    /* -----------------------------------------------------
-       REACTION
-    ----------------------------------------------------- */
-
-    socket.on(
-        "sync-reaction",
-        function (data) {
-
-            if (!data) {
-
-                return;
-
-            }
-
-
-            showReaction(
-                data.emoji
-            );
-
-        }
-    );
-
-
-    /* -----------------------------------------------------
-       CHAT
-    ----------------------------------------------------- */
-
-    socket.on(
-        "new-chat-message",
-        function (data) {
-
-            if (!data) {
-
-                return;
-
-            }
-
-
-            addChatMessage(
-                data.message ||
-                "",
-                "Listener"
-            );
-
-        }
-    );
-
-
-    /* -----------------------------------------------------
-       DISCONNECT
-    ----------------------------------------------------- */
-
-    socket.on(
-        "disconnect",
-        function () {
-
-            console.log(
-                "🔴 Disconnected from SleepStory server"
-            );
 
         }
     );
@@ -3119,502 +2595,204 @@ function setupSocketEvents() {
 
 
 /* =========================================================
-   APPLY ROOM STATE
+   SEND CHAT
 ========================================================= */
 
-function applyJamRoomState(
-    data
-) {
+function sendChatMessage() {
 
-    if (!data) {
-
-        return;
-
-    }
-
-
-    /*
-       Story
-    */
-
-    if (
-        data.story
-    ) {
-
-        applyRemoteStory(
-            data.story,
-            Number(
-                data.currentTime
-            ) || 0,
-            Boolean(
-                data.isPlaying
-            )
+    const input =
+        document.getElementById(
+            "chatInput"
         );
 
+
+    if (!input) {
+
         return;
 
     }
 
 
-    /*
-       No story information
-       but playback state exists.
-    */
+    const message =
+        input.value.trim();
 
-    const time =
-        Number(
-            data.currentTime
-        ) || 0;
+
+    if (!message) {
+
+        return;
+
+    }
 
 
     if (
-        data.isPlaying
+        socket &&
+        roomCode
     ) {
 
-        applyRemotePlay(
-            time
+        socket.emit(
+            "chat-message",
+            {
+                message
+            }
         );
 
     } else {
 
-        applyRemotePause(
-            time
+        addChatMessage(
+            message,
+            "You"
         );
 
     }
+
+
+    input.value = "";
 
 }
 
 
 /* =========================================================
-   APPLY REMOTE STORY
+   ADD CHAT MESSAGE
 ========================================================= */
 
-function applyRemoteStory(
-    story,
-    currentTime,
-    shouldPlay
+function addChatMessage(
+    message,
+    username
 ) {
 
-    if (!story) {
+    const container =
+        document.getElementById(
+            "chatMessages"
+        );
+
+
+    if (!container) {
 
         return;
 
     }
 
 
-    suppressJamEvents =
-        true;
+    const item =
+        document.createElement(
+            "div"
+        );
 
 
-    currentStory =
-        story;
+    item.className =
+        "chat-message";
 
 
-    updateStoryInfo(
-        story
+    item.innerHTML = `
+
+        <strong>
+            ${escapeHTML(username)}
+        </strong>
+
+        <span>
+            ${escapeHTML(message)}
+        </span>
+
+    `;
+
+
+    container.appendChild(
+        item
     );
 
 
-    if (
-        story.type ===
-        "youtube" &&
-        story.videoId
-    ) {
+    container.scrollTop =
+        container.scrollHeight;
 
-        youtubeStoryActive =
-            true;
+}
 
 
-        const youtubeContainer =
-            document.getElementById(
-                "youtubePlayerContainer"
-            );
+/* =========================================================
+   TABS
+========================================================= */
+
+function showTab(
+    tab
+) {
+
+    const chatPanel =
+        document.getElementById(
+            "chatPanel"
+        );
+
+    const reactionsPanel =
+        document.getElementById(
+            "reactionsPanel"
+        );
+
+    const chatButton =
+        document.getElementById(
+            "tabChatBtn"
+        );
+
+    const reactionsButton =
+        document.getElementById(
+            "tabReactionsBtn"
+        );
 
 
-        if (youtubeContainer) {
+    if (tab === "chat") {
 
-            youtubeContainer.style.display =
+        if (chatPanel) {
+
+            chatPanel.style.display =
                 "block";
 
         }
 
+        if (reactionsPanel) {
 
-        if (
-            youtubePlayer &&
-            youtubeReady
-        ) {
-
-            youtubePlayer.loadVideoById(
-                story.videoId
-            );
-
-
-            setTimeout(
-                function () {
-
-                    if (
-                        !youtubePlayer ||
-                        !youtubeReady
-                    ) {
-
-                        suppressJamEvents =
-                            false;
-
-                        return;
-
-                    }
-
-
-                    try {
-
-                        youtubePlayer.seekTo(
-                            Number(
-                                currentTime
-                            ) || 0,
-                            true
-                        );
-
-
-                        if (shouldPlay) {
-
-                            youtubePlayer.playVideo();
-
-                        } else {
-
-                            youtubePlayer.pauseVideo();
-
-                        }
-
-                    } catch (
-                        error
-                    ) {
-
-                        console.error(
-                            error
-                        );
-
-                    }
-
-
-                    suppressJamEvents =
-                        false;
-
-                },
-                700
-            );
-
-        } else {
-
-            suppressJamEvents =
-                false;
-
-        }
-
-
-    } else if (
-        story.type ===
-        "local" &&
-        story.src
-    ) {
-
-        youtubeStoryActive =
-            false;
-
-
-        const youtubeContainer =
-            document.getElementById(
-                "youtubePlayerContainer"
-            );
-
-
-        if (youtubeContainer) {
-
-            youtubeContainer.style.display =
+            reactionsPanel.style.display =
                 "none";
 
         }
 
+        if (chatButton) {
 
-        if (audioPlayer) {
+            chatButton.classList.add("active");
 
-            audioPlayer.src =
-                story.src;
+        }
 
+        if (reactionsButton) {
 
-            audioPlayer.load();
-
-
-            const targetTime =
-                Number(
-                    currentTime
-                ) || 0;
-
-
-            audioPlayer.addEventListener(
-                "loadedmetadata",
-                function onLoaded() {
-
-                    audioPlayer.removeEventListener(
-                        "loadedmetadata",
-                        onLoaded
-                    );
-
-
-                    audioPlayer.currentTime =
-                        targetTime;
-
-
-                    if (shouldPlay) {
-
-                        audioPlayer.play()
-                            .catch(
-                                function () {}
-                            );
-
-                    } else {
-
-                        audioPlayer.pause();
-
-                    }
-
-
-                    suppressJamEvents =
-                        false;
-
-                }
-            );
-
-        } else {
-
-            suppressJamEvents =
-                false;
+            reactionsButton.classList.remove("active");
 
         }
 
     } else {
 
-        suppressJamEvents =
-            false;
+        if (chatPanel) {
 
-    }
-
-}
-
-
-/* =========================================================
-   REMOTE PLAY
-========================================================= */
-
-function applyRemotePlay(
-    time
-) {
-
-    suppressJamEvents =
-        true;
-
-
-    if (
-        youtubeStoryActive &&
-        youtubePlayer &&
-        youtubeReady
-    ) {
-
-        try {
-
-            youtubePlayer.seekTo(
-                time,
-                true
-            );
-
-
-            youtubePlayer.playVideo();
-
-        } catch (
-            error
-        ) {
-
-            console.error(
-                error
-            );
+            chatPanel.style.display =
+                "none";
 
         }
 
+        if (reactionsPanel) {
 
-        setTimeout(
-            function () {
-
-                suppressJamEvents =
-                    false;
-
-            },
-            500
-        );
-
-
-    } else if (
-        audioPlayer
-    ) {
-
-        audioPlayer.currentTime =
-            time;
-
-
-        audioPlayer.play()
-            .catch(
-                function () {}
-            );
-
-
-        setTimeout(
-            function () {
-
-                suppressJamEvents =
-                    false;
-
-            },
-            300
-        );
-
-    } else {
-
-        suppressJamEvents =
-            false;
-
-    }
-
-
-    updatePlayButtons(
-        true
-    );
-
-}
-
-
-/* =========================================================
-   REMOTE PAUSE
-========================================================= */
-
-function applyRemotePause(
-    time
-) {
-
-    suppressJamEvents =
-        true;
-
-
-    if (
-        youtubeStoryActive &&
-        youtubePlayer &&
-        youtubeReady
-    ) {
-
-        try {
-
-            youtubePlayer.seekTo(
-                time,
-                true
-            );
-
-
-            youtubePlayer.pauseVideo();
-
-        } catch (
-            error
-        ) {
-
-            console.error(
-                error
-            );
+            reactionsPanel.style.display =
+                "block";
 
         }
 
+        if (chatButton) {
 
-    } else if (
-        audioPlayer
-    ) {
-
-        audioPlayer.currentTime =
-            time;
-
-
-        audioPlayer.pause();
-
-    }
-
-
-    updatePlayButtons(
-        false
-    );
-
-
-    setTimeout(
-        function () {
-
-            suppressJamEvents =
-                false;
-
-        },
-        500
-    );
-
-}
-
-
-/* =========================================================
-   REMOTE SEEK
-========================================================= */
-
-function applyRemoteSeek(
-    time
-) {
-
-    suppressJamEvents =
-        true;
-
-
-    if (
-        youtubeStoryActive &&
-        youtubePlayer &&
-        youtubeReady
-    ) {
-
-        try {
-
-            youtubePlayer.seekTo(
-                time,
-                true
-            );
-
-        } catch (
-            error
-        ) {
-
-            console.error(
-                error
-            );
+            chatButton.classList.remove("active");
 
         }
 
-    } else if (
-        audioPlayer
-    ) {
+        if (reactionsButton) {
 
-        audioPlayer.currentTime =
-            time;
+            reactionsButton.classList.add("active");
+
+        }
 
     }
-
-
-    setTimeout(
-        function () {
-
-            suppressJamEvents =
-                false;
-
-        },
-        300
-    );
 
 }
 
@@ -3658,46 +2836,31 @@ function updateUserCount(
 
 
 /* =========================================================
-   REACTIONS
+   SAVE CURRENT STORY FOR JAM PAGE
 ========================================================= */
 
-function sendReaction(
-    emoji
-) {
+function saveJamStory() {
 
-    if (!emoji) {
+    try {
 
-        return;
+        if (!currentStory) {
 
-    }
+            return;
 
-
-    /*
-       Show locally
-    */
-
-    showReaction(
-        emoji
-    );
+        }
 
 
-    /*
-       Send to room
-    */
+        localStorage.setItem(
+            "sleepstory-current-story",
+            JSON.stringify(currentStory)
+        );
 
-    if (
-        socket &&
-        roomCode
-    ) {
 
-        socket.emit(
-            "reaction",
-            {
+    } catch (error) {
 
-                emoji:
-                    emoji
-
-            }
+        console.warn(
+            "Could not save current Jam story:",
+            error
         );
 
     }
@@ -3706,433 +2869,311 @@ function sendReaction(
 
 
 /* =========================================================
-   SHOW REACTION
+   JAM PLAY SYNC
 ========================================================= */
 
-function showReaction(
-    emoji
-) {
+function syncJamPlay() {
 
-    const container =
-        document.getElementById(
-            "reactionContainer"
-        );
-
-
-    if (!container) {
+    if (
+        suppressJamEvents ||
+        !socket ||
+        !roomCode
+    ) {
 
         return;
 
     }
 
 
-    const reaction =
-        document.createElement(
-            "div"
-        );
-
-
-    reaction.className =
-        "floating-reaction";
-
-
-    reaction.textContent =
-        emoji;
-
-
-    reaction.style.position =
-        "fixed";
-
-
-    reaction.style.left =
-        (
-            Math.floor(
-                Math.random() *
-                80 +
-                10
-            )
-        ) + "%";
-
-
-    reaction.style.bottom =
-        "100px";
-
-
-    reaction.style.fontSize =
-        "30px";
-
-
-    reaction.style.zIndex =
-        "9999";
-
-
-    reaction.style.pointerEvents =
-        "none";
-
-
-    container.appendChild(
-        reaction
+    socket.emit(
+        "play",
+        {
+            currentTime:
+                getCurrentTime()
+        }
     );
+
+}
+
+
+/* =========================================================
+   JAM PAUSE SYNC
+========================================================= */
+
+function syncJamPause() {
+
+    if (
+        suppressJamEvents ||
+        !socket ||
+        !roomCode
+    ) {
+
+        return;
+
+    }
+
+
+    socket.emit(
+        "pause",
+        {
+            currentTime:
+                getCurrentTime()
+        }
+    );
+
+}
+
+
+/* =========================================================
+   JAM SEEK SYNC
+========================================================= */
+
+function syncJamSeek() {
+
+    if (
+        suppressJamEvents ||
+        !socket ||
+        !roomCode
+    ) {
+
+        return;
+
+    }
+
+
+    socket.emit(
+        "seek",
+        {
+            currentTime:
+                getCurrentTime()
+        }
+    );
+
+}
+
+
+/* =========================================================
+   REMOTE PLAY
+========================================================= */
+
+function applyRemotePlay(
+    time
+) {
+
+    suppressJamEvents =
+        true;
+
+
+    if (
+        youtubeStoryActive &&
+        youtubePlayer &&
+        youtubeReady
+    ) {
+
+        try {
+
+            youtubePlayer.seekTo(
+                time,
+                true
+            );
+
+            youtubePlayer.playVideo();
+
+        } catch (error) {}
+
+    } else if (audioPlayer) {
+
+        audioPlayer.currentTime =
+            time;
+
+
+        audioPlayer.play()
+            .catch(
+                function () {}
+            );
+
+    }
+
+
+    updatePlayButtons(true);
 
 
     setTimeout(
         function () {
 
-            reaction.style.transition =
-                "all 2s ease";
-
-
-            reaction.style.transform =
-                "translateY(-250px)";
-
-
-            reaction.style.opacity =
-                "0";
+            suppressJamEvents =
+                false;
 
         },
-        50
+        500
     );
+
+}
+
+
+/* =========================================================
+   REMOTE PAUSE
+========================================================= */
+
+function applyRemotePause(
+    time
+) {
+
+    suppressJamEvents =
+        true;
+
+
+    if (
+        youtubeStoryActive &&
+        youtubePlayer &&
+        youtubeReady
+    ) {
+
+        try {
+
+            youtubePlayer.seekTo(
+                time,
+                true
+            );
+
+            youtubePlayer.pauseVideo();
+
+        } catch (error) {}
+
+    } else if (audioPlayer) {
+
+        audioPlayer.currentTime =
+            time;
+
+        audioPlayer.pause();
+
+    }
+
+
+    updatePlayButtons(false);
 
 
     setTimeout(
         function () {
 
-            reaction.remove();
+            suppressJamEvents =
+                false;
 
         },
-        2100
+        500
     );
 
 }
 
 
 /* =========================================================
-   CHAT
+   REMOTE SEEK
 ========================================================= */
 
-function sendChatMessage() {
+function applyRemoteSeek(
+    time
+) {
 
-    const input =
-        document.getElementById(
-            "chatInput"
-        );
-
-
-    if (!input) {
-
-        return;
-
-    }
-
-
-    const message =
-        input.value.trim();
-
-
-    if (!message) {
-
-        return;
-
-    }
+    suppressJamEvents =
+        true;
 
 
     if (
-        socket &&
-        roomCode
+        youtubeStoryActive &&
+        youtubePlayer &&
+        youtubeReady
     ) {
 
-        socket.emit(
-            "chat-message",
-            {
+        try {
 
-                message:
-                    message
+            youtubePlayer.seekTo(
+                time,
+                true
+            );
 
-            }
-        );
+        } catch (error) {}
 
-    } else {
+    } else if (audioPlayer) {
 
-        addChatMessage(
-            message,
-            "You"
-        );
+        audioPlayer.currentTime =
+            time;
 
     }
 
 
-    input.value =
-        "";
+    setTimeout(
+        function () {
+
+            suppressJamEvents =
+                false;
+
+        },
+        300
+    );
 
 }
 
 
 /* =========================================================
-   ADD CHAT MESSAGE
+   STORY PERSISTENCE
 ========================================================= */
 
-function addChatMessage(
-    message,
-    username
+function saveLastStory(
+    story
 ) {
 
-    const container =
-        document.getElementById(
-            "chatMessages"
+    try {
+
+        localStorage.setItem(
+            "sleepstory-last-story",
+            JSON.stringify(story)
         );
 
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    const item =
-        document.createElement(
-            "div"
-        );
-
-
-    item.className =
-        "chat-message";
-
-
-    item.innerHTML = `
-
-        <strong>
-            ${escapeHTML(
-                username
-            )}
-        </strong>
-
-        <span>
-            ${escapeHTML(
-                message
-            )}
-        </span>
-
-    `;
-
-
-    container.appendChild(
-        item
-    );
-
-
-    container.scrollTop =
-        container.scrollHeight;
+    } catch (error) {}
 
 }
 
 
-/* =========================================================
-   TABS
-========================================================= */
+function restoreLastStory() {
 
-function showTab(
-    tab
-) {
+    try {
 
-    const chatPanel =
-        document.getElementById(
-            "chatPanel"
-        );
-
-    const reactionsPanel =
-        document.getElementById(
-            "reactionsPanel"
-        );
-
-    const chatButton =
-        document.getElementById(
-            "tabChatBtn"
-        );
-
-    const reactionButton =
-        document.getElementById(
-            "tabReactionsBtn"
-        );
-
-
-    if (
-        tab ===
-        "chat"
-    ) {
-
-        if (chatPanel) {
-
-            chatPanel.style.display =
-                "block";
-
-        }
-
-
-        if (reactionsPanel) {
-
-            reactionsPanel.style.display =
-                "none";
-
-        }
-
-
-        if (chatButton) {
-
-            chatButton.classList.add(
-                "active"
+        const saved =
+            localStorage.getItem(
+                "sleepstory-last-story"
             );
 
-        }
 
+        if (!saved) {
 
-        if (reactionButton) {
-
-            reactionButton.classList.remove(
-                "active"
-            );
-
-        }
-
-    } else {
-
-        if (chatPanel) {
-
-            chatPanel.style.display =
-                "none";
+            return;
 
         }
 
 
-        if (reactionsPanel) {
-
-            reactionsPanel.style.display =
-                "block";
-
-        }
-
-
-        if (chatButton) {
-
-            chatButton.classList.remove(
-                "active"
-            );
-
-        }
-
-
-        if (reactionButton) {
-
-            reactionButton.classList.add(
-                "active"
-            );
-
-        }
-
-    }
-
-}
-
-
-/* =========================================================
-   FULL PLAYER
-========================================================= */
-
-function openFullPlayer() {
-
-    if (!fullPlayer) {
-
-        return;
-
-    }
-
-
-    fullPlayer.classList.add(
-        "active"
-    );
-
-
-    fullPlayer.style.display =
-        "flex";
-
-}
-
-
-function closeFullPlayer() {
-
-    if (!fullPlayer) {
-
-        return;
-
-    }
-
-
-    fullPlayer.classList.remove(
-        "active"
-    );
-
-
-    fullPlayer.style.display =
-        "none";
-
-}
-
-
-/* =========================================================
-   CLOSE MODALS
-========================================================= */
-
-window.addEventListener(
-    "click",
-    function (event) {
-
-        const categoryModal =
-            document.getElementById(
-                "categoryModal"
-            );
-
-        const jamModal =
-            document.getElementById(
-                "jamChoiceModal"
-            );
-
-        const roomModal =
-            document.getElementById(
-                "roomModal"
-            );
+        const story =
+            JSON.parse(saved);
 
 
         if (
-            event.target ===
-            categoryModal
+            story &&
+            story.title
         ) {
 
-            closeCategory();
+            currentStory =
+                story;
 
         }
 
+    } catch (error) {
 
-        if (
-            event.target ===
-            jamModal
-        ) {
-
-            closeJamChoice();
-
-        }
-
-
-        if (
-            event.target ===
-            roomModal
-        ) {
-
-            closeModal();
-
-        }
+        console.warn(
+            "Could not restore story."
+        );
 
     }
-);
+
+}
 
 
 /* =========================================================
@@ -4171,53 +3212,93 @@ function escapeHTML(
 
 
 /* =========================================================
-   ESCAPE ATTRIBUTE
+   WINDOW CLICK
 ========================================================= */
 
-function escapeAttribute(
-    value
-) {
+window.addEventListener(
+    "click",
+    function (event) {
 
-    return String(
-        value || ""
-    )
-        .replace(
-            /'/g,
-            "\\'"
-        );
+        const categoryModal =
+            document.getElementById(
+                "categoryModal"
+            );
 
-}
+        const jamChoiceModal =
+            document.getElementById(
+                "jamChoiceModal"
+            );
+
+        const roomModal =
+            document.getElementById(
+                "roomModal"
+            );
+
+
+        if (
+            event.target ===
+            categoryModal
+        ) {
+
+            closeCategory();
+
+        }
+
+
+        if (
+            event.target ===
+            jamChoiceModal
+        ) {
+
+            closeJamChoice();
+
+        }
+
+
+        if (
+            event.target ===
+            roomModal
+        ) {
+
+            closeModal();
+
+        }
+
+    }
+);
 
 
 /* =========================================================
-   KEYBOARD SHORTCUTS
+   KEYBOARD
 ========================================================= */
 
 document.addEventListener(
     "keydown",
     function (event) {
 
+        const activeElement =
+            document.activeElement;
+
+
+        const tag =
+            activeElement?.tagName
+                ?.toLowerCase();
+
+
         if (
-            event.code ===
-            "Space"
+            tag === "input" ||
+            tag === "textarea" ||
+            tag === "select"
         ) {
 
-            const tag =
-                document.activeElement
-                    ?.tagName
-                    ?.toLowerCase();
+            return;
+
+        }
 
 
-            if (
-                tag === "input" ||
-                tag === "textarea" ||
-                tag === "select"
-            ) {
-
-                return;
-
-            }
-
+        if (
+            event.code === "Space"
+        ) {
 
             event.preventDefault();
 
@@ -4227,8 +3308,7 @@ document.addEventListener(
 
 
         if (
-            event.key ===
-            "Escape"
+            event.key === "Escape"
         ) {
 
             closeCategory();
@@ -4250,5 +3330,5 @@ document.addEventListener(
 ========================================================= */
 
 console.log(
-    "🌙 SleepStory script loaded successfully."
+    "🌙 SleepStory main script ready."
 );
