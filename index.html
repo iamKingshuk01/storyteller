@@ -31,7 +31,7 @@
         <nav>
             <a href="#home">Home</a>
             <a href="#stories">Stories</a>
-            <a href="#moods">Categories</a>
+            <a href="#stories">Categories</a>
             <a href="#jam">Jam</a>
         </nav>
 
@@ -59,61 +59,53 @@
     <!-- ================= HERO ================= -->
 
     <section class="hero" id="home">
+    <div class="hero-overlay"></div>
 
-        <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <p class="small-title">
+            ✦ EXPLORE STORIES
+        </p>
 
-        <div class="hero-content">
+        <h1>Stories for Every Mood</h1>
 
-            <p class="small-title">
-                ✦ TONIGHT'S FEATURED STORY
-            </p>
+        <p class="hero-description">
+            Discover Bengali audio stories, suspense, romance,
+            horror, mystery and more — all in one place.
+        </p>
 
-            <h1>The Last Star</h1>
-
-            <p class="hero-description">
-
-                A peaceful journey through a quiet universe,
-                where one little star discovers the meaning
-                of home.
-
-            </p>
-
-            <div class="story-info">
-
-                <span>2026</span>
-                <span>•</span>
-                <span>32 min</span>
-                <span>•</span>
-                <span>Sleep</span>
-
-            </div>
-
-                        <div class="hero-buttons">
-
-                <button
-                    class="primary-btn"
-                    onclick="playStory('The Last Star')"
-                >
-                    ▶ Play Story
-
-                </button>
-
-                               <button
-                    class="secondary-btn"
-                    onclick="openJamChoice()"
-                >
-                    👥 Listen Together
-                </button>
-            </div>
-
+        <div class="story-info">
+            <span>🎧 Audio Stories</span>
+            <span>•</span>
+            <span>বাংলা</span>
+            <span>•</span>
+            <span>English</span>
         </div>
 
-        <div class="hero-badge">
-            <strong>4.9 ★</strong>
-            <span>12k+ sleepy listeners</span>
-        </div>
+        <div class="hero-buttons">
+            <button
+                class="primary-btn"
+                onclick="document.getElementById('stories').scrollIntoView({behavior:'smooth'})"
+            >
+                🎧 Explore Stories
+            </button>
 
-    </section>
+            <button
+                class="secondary-btn"
+                onclick="openJamChoice()"
+            >
+                👥 Listen Together
+            </button>
+        </div>
+    </div>
+
+    <div class="hero-badge">
+        <strong>🎙️</strong>
+        <span>Stories for everyone</span>
+    </div>
+</section>
+
+
+
 
 
     <!-- ================= MAIN ================= -->
@@ -121,209 +113,21 @@
     <main>
 
 
-        <!-- ================= CONTINUE LISTENING ================= -->
-
+        <!-- ================= STORY CATEGORIES ================= -->
         <section class="section" id="stories">
-
-            <div class="section-header">
-
-                <h2>Continue Listening</h2>
-
-                <span>See all →</span>
-
-            </div>
-
-
+            <div class="section-header"><h2>Story Categories</h2><span>Explore all →</span></div>
             <div class="story-row">
-
-
-                <!-- STORY CARD -->
-
-                <article
-                    class="story-card"
-                    data-title="The Last Star"
-                >
-
-                    <div class="story-image star-image">
-
-                        <span class="play-overlay"
-                              onclick="playStory('The Last Star')">
-                            ▶
-                        </span>
-
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>The Last Star</h3>
-
-                        <p>32 min • Calm</p>
-
-                        <div class="progress">
-
-                            <div class="progress-fill"
-                                 style="width: 42%;">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </article>
-
-
-                <!-- STORY CARD -->
-
-                              <article
-                    class="story-card story-card-light"
-                    data-title="Moonlight Dreams"
-                >
-
-                    <div class="story-image moon-image">
-
-                        <span class="play-overlay"
-                              onclick="playStory('Moonlight Dreams')">
-                            ▶
-                        </span>
-
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Moonlight Dreams</h3>
-
-                        <p>24 min • Relaxing</p>
-
-                        <div class="progress">
-
-                            <div class="progress-fill"
-                                 style="width: 65%;">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </article>
-
-
-                <!-- STORY CARD -->
-
-                <article
-                    class="story-card"
-                    data-title="The Silent Forest"
-                >
-
-                    <div class="story-image forest-image">
-
-                        <span class="play-overlay"
-                              onclick="playStory('The Silent Forest')">
-                            ▶
-                        </span>
-
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>The Silent Forest</h3>
-
-                        <p>41 min • Mystery</p>
-
-                        <div class="progress">
-
-                            <div class="progress-fill"
-                                 style="width: 20%;">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </article>
-
-
-                <!-- STORY CARD -->
-
-                                <article
-                    class="story-card story-card-light"
-                    data-title="Ocean Whispers"
-                >
-
-                    <div class="story-image ocean-image">
-
-                        <span class="play-overlay"
-                              onclick="playStory('Ocean Whispers')">
-                            ▶
-                        </span>
-
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Ocean Whispers</h3>
-
-                        <p>28 min • Sleep</p>
-
-                        <div class="progress">
-
-                            <div class="progress-fill"
-                                 style="width: 0%;">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </article>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- ================= MOODS ================= -->
-
-        <section class="section" id="moods">
-
-            <div class="section-header">
-
-                <h2>Choose Your Mood</h2>
-
-            </div>
-
-
-            <div class="mood-grid">
-
-                <button onclick="selectMood('Sleep')">
-                    😴
-                    <span>Sleep</span>
-                </button>
-
-                <button onclick="selectMood('Relax')">
-                    🌙
-                    <span>Relax</span>
-                </button>
-
-                <button onclick="selectMood('Romance')">
-                    ❤️
-                    <span>Romance</span>
-                </button>
-
-                <button onclick="selectMood('Mystery')">
-                    🕯️
-                    <span>Mystery</span>
-                </button>
-
-                <button onclick="selectMood('Adventure')">
-                    🏔️
-                    <span>Adventure</span>
-                </button>
-
-            </div>
-
-        </section>
-
+<article class="story-card" data-title="Sunday Suspense"><div class="story-image"><span style="font-size:48px;">🎙️</span></div><div class="story-details"><h3>Sunday Suspense</h3><p>Thriller • Mystery • Suspense</p></div></article>
+<article class="story-card" data-title="Mirchi Bangla"><div class="story-image"><span style="font-size:48px;">🎧</span></div><div class="story-details"><h3>Mirchi Bangla</h3><p>Bengali • Audio Stories</p></div></article>
+<article class="story-card" data-title="Love Stories"><div class="story-image"><span style="font-size:48px;">❤️</span></div><div class="story-details"><h3>Love Stories</h3><p>Romance • Feelings</p></div></article>
+<article class="story-card" data-title="Horror Stories"><div class="story-image"><span style="font-size:48px;">👻</span></div><div class="story-details"><h3>Horror Stories</h3><p>Ghost • Paranormal</p></div></article>
+<article class="story-card" data-title="Mystery & Thriller"><div class="story-image"><span style="font-size:48px;">🔍</span></div><div class="story-details"><h3>Mystery & Thriller</h3><p>Mystery • Investigation</p></div></article>
+<article class="story-card" data-title="Crime Stories"><div class="story-image"><span style="font-size:48px;">🕵️</span></div><div class="story-details"><h3>Crime Stories</h3><p>Crime • Detective</p></div></article>
+<article class="story-card" data-title="Emotional Stories"><div class="story-image"><span style="font-size:48px;">💔</span></div><div class="story-details"><h3>Emotional Stories</h3><p>Drama • Life</p></div></article>
+<article class="story-card" data-title="Bedtime Stories"><div class="story-image"><span style="font-size:48px;">🌙</span></div><div class="story-details"><h3>Bedtime Stories</h3><p>Calm • Relaxing</p></div></article>
+<article class="story-card" data-title="Bengali Stories"><div class="story-image"><span style="font-size:48px;">🇧🇩</span></div><div class="story-details"><h3>Bengali Stories</h3><p>Bengali • Audio</p></div></article>
+<article class="story-card" data-title="English Stories"><div class="story-image"><span style="font-size:48px;">🌍</span></div><div class="story-details"><h3>English Stories</h3><p>English • Audio</p></div></article>
+</div></section>
 
 
         <!-- ================= JAM ================= -->
