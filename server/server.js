@@ -260,59 +260,38 @@ io.on("connection", (socket) => {
 
     // ================= DISCONNECT =================
 
-    socket.on("disconnect", () => {
-
-        console.log(
-            "❌ User disconnected:",
-            socket.id
-        );
-
+        socket.on("disconnect", () => {
+        console.log("❌ User disconnected:", socket.id);
 
         const roomCode = socket.roomCode;
 
-        if (!roomCode) {
-            return;
-        }
-
+        if (!roomCode) return;
 
         const room = rooms.get(roomCode);
 
-        if (!room) {
-            return;
-        }
+        if (!room) return;
 
-
-        // Host চলে গেলে room delete
         if (room.host === socket.id) {
-
-            rooms.delete(roomCode);
-
-            console.log(
-                "🗑️ Room deleted:",
-                roomCode
-            );
-
-        } else {
-
+            // Host disconnect হলে সাথে সাথে room মুছে না ফেলে
+            // ৩০ সেকেন্ড wait করি (phone background/screen lock হলেও room বাঁচবে)
             setTimeout(() => {
+                const stillExists = rooms.get(roomCode);
 
-                io.to(roomCode).emit(
-                    "user-count",
-                    {
-                        count:
-                            io.sockets.adapter.rooms.get(
-                                roomCode
-                            )?.size || 0
-                    }
-                );
-
+                if (stillExists && stillExists.host === socket.id) {
+                    rooms.delete(roomCode);
+                    console.log("🗑️ Room deleted after grace period:", roomCode);
+                }
+            }, 30000);
+        } else {
+            setTimeout(() => {
+                io.to(roomCode).emit("user-count", {
+                    count: io.sockets.adapter.rooms.get(roomCode)?.size || 0
+                });
             }, 100);
         }
     });
 
 });
-
-
 // ================= START SERVER =================
 
 const PORT = process.env.PORT || 3000;
