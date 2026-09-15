@@ -50,7 +50,7 @@ io.on("connection", (socket) => {
 
     // ================= CREATE ROOM =================
 
-    socket.on("create-room", () => {
+    socket.on("create-room", (callback) => {
 
         const roomCode = generateRoomCode();
 
@@ -72,6 +72,13 @@ io.on("connection", (socket) => {
         socket.emit("room-created", {
             roomCode: roomCode
         });
+
+        if (typeof callback === "function") {
+    callback({
+        success: true,
+        roomCode: roomCode
+    });
+}
 
         io.to(roomCode).emit("user-count", {
             count:
