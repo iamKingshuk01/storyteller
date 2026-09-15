@@ -14,7 +14,6 @@ const BACKEND_URL =
 const JAM_PAGE =
     "jam.html";
 
-
 /* =========================================================
    SOCKET
 ========================================================= */
@@ -765,10 +764,7 @@ function setupSocketEvents() {
    GO TO JAM PAGE
 ========================================================= */
 
-function goToJamPage(
-    code,
-    host
-) {
+function goToJamPage(code, host) {
 
     const cleanCode =
         String(code || "")
@@ -806,6 +802,7 @@ function goToJamPage(
         url
     );
 
+alert("Opening Jam: " + url);
 
     window.location.href =
         url;
