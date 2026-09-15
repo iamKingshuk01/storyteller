@@ -1,6 +1,6 @@
 /* =========================================================
    SLEEPSTORY — COMPLETE SCRIPT
-   Compatible with current index.html
+   Jam + Local Audio + YouTube
 ========================================================= */
 
 
@@ -19,130 +19,267 @@ const BACKEND_URL =
 let socket = null;
 
 try {
+
     if (typeof io !== "undefined") {
+
         socket = io(BACKEND_URL, {
-            transports: ["websocket", "polling"]
+
+            transports: [
+                "websocket",
+                "polling"
+            ],
+
+            reconnection: true,
+
+            reconnectionAttempts: Infinity,
+
+            reconnectionDelay: 1000
+
         });
+
     }
+
 } catch (error) {
-    console.error("Socket connection error:", error);
+
+    console.error(
+        "Socket connection error:",
+        error
+    );
+
 }
 
 
 /* =========================================================
-   AUDIO
+   AUDIO ELEMENTS
 ========================================================= */
 
-const audioPlayer = document.getElementById("audioPlayer");
+const audioPlayer =
+    document.getElementById(
+        "audioPlayer"
+    );
 
-const playerTitle = document.getElementById("playerTitle");
+const playerTitle =
+    document.getElementById(
+        "playerTitle"
+    );
 
 const currentTimeElement =
-    document.getElementById("currentTime");
+    document.getElementById(
+        "currentTime"
+    );
 
 const durationElement =
-    document.getElementById("duration");
+    document.getElementById(
+        "duration"
+    );
 
 const progressBar =
-    document.getElementById("progressBar");
+    document.getElementById(
+        "progressBar"
+    );
 
 const fullCurrentTime =
-    document.getElementById("fullCurrentTime");
+    document.getElementById(
+        "fullCurrentTime"
+    );
 
 const fullDuration =
-    document.getElementById("fullDuration");
+    document.getElementById(
+        "fullDuration"
+    );
 
 const fullProgressBar =
-    document.getElementById("fullProgressBar");
+    document.getElementById(
+        "fullProgressBar"
+    );
 
 const fullPlayerTitle =
-    document.getElementById("fullPlayerTitle");
+    document.getElementById(
+        "fullPlayerTitle"
+    );
 
 const fullPlayer =
-    document.getElementById("fullPlayer");
+    document.getElementById(
+        "fullPlayer"
+    );
 
 const fullPlayButton =
-    document.getElementById("fullPlayButton");
+    document.getElementById(
+        "fullPlayButton"
+    );
 
 const playButton =
-    document.getElementById("playButton");
+    document.getElementById(
+        "playButton"
+    );
 
 
 /* =========================================================
-   YOUTUBE PLAYER
+   YOUTUBE
 ========================================================= */
 
 let youtubePlayer = null;
+
 let youtubeReady = false;
+
 let youtubeStoryActive = false;
 
 
-/*
-   YouTube API calls this automatically
-*/
+/* =========================================================
+   JAM
+========================================================= */
 
-window.onYouTubeIframeAPIReady = function () {
+let roomCode = null;
 
-    youtubePlayer = new YT.Player("youtubePlayer", {
+let isHost = false;
 
-        width: "100%",
-        height: "450",
+let jamSyncing = false;
 
-        playerVars: {
-            playsinline: 1,
-            controls: 1,
-            rel: 0
-        },
+let suppressJamEvents = false;
 
-        events: {
 
-            onReady: function () {
+/* =========================================================
+   YOUTUBE API READY
+========================================================= */
 
-                youtubeReady = true;
+window.onYouTubeIframeAPIReady =
+function () {
 
-                console.log("YouTube Player Ready");
+    const element =
+        document.getElementById(
+            "youtubePlayer"
+        );
 
-                const container =
-                    document.getElementById(
-                        "youtubePlayerContainer"
-                    );
 
-                if (container) {
-                    container.style.display = "none";
+    if (!element) {
+
+        return;
+
+    }
+
+
+    youtubePlayer =
+        new YT.Player(
+            "youtubePlayer",
+            {
+
+                width: "100%",
+
+                height: "450",
+
+                playerVars: {
+
+                    playsinline: 1,
+
+                    controls: 1,
+
+                    rel: 0
+
+                },
+
+                events: {
+
+                    onReady: function () {
+
+                        youtubeReady =
+                            true;
+
+
+                        console.log(
+                            "🎬 YouTube Player Ready"
+                        );
+
+
+                        const container =
+                            document.getElementById(
+                                "youtubePlayerContainer"
+                            );
+
+
+                        if (container) {
+
+                            container.style.display =
+                                "none";
+
+                        }
+
+                    },
+
+
+                    onStateChange:
+                    function (event) {
+
+                        if (
+                            !youtubeStoryActive
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        /*
+                           Ignore events caused
+                           by remote Jam sync.
+                        */
+
+                        if (
+                            suppressJamEvents
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        if (
+                            event.data ===
+                            YT.PlayerState.PLAYING
+                        ) {
+
+                            updatePlayButtons(
+                                true
+                            );
+
+
+                            syncJamPlay();
+
+                        }
+
+
+                        if (
+                            event.data ===
+                            YT.PlayerState.PAUSED
+                        ) {
+
+                            updatePlayButtons(
+                                false
+                            );
+
+
+                            syncJamPause();
+
+                        }
+
+
+                        if (
+                            event.data ===
+                            YT.PlayerState.ENDED
+                        ) {
+
+                            updatePlayButtons(
+                                false
+                            );
+
+                        }
+
+                    }
+
                 }
-            },
 
-            onStateChange: function (event) {
-
-                if (!youtubeStoryActive) return;
-
-                if (event.data === YT.PlayerState.PLAYING) {
-
-                    updatePlayButtons(true);
-
-                    syncJamPlay();
-                }
-
-                if (
-                    event.data ===
-                    YT.PlayerState.PAUSED
-                ) {
-
-                    updatePlayButtons(false);
-
-                    syncJamPause();
-                }
-
-                if (
-                    event.data ===
-                    YT.PlayerState.ENDED
-                ) {
-
-                    updatePlayButtons(false);
-                }
             }
-        }
-    });
+        );
+
 };
 
 
@@ -153,42 +290,62 @@ window.onYouTubeIframeAPIReady = function () {
 const stories = [
 
     {
-        title: "SleepStory",
-        category: "Bedtime Stories",
-        type: "local",
-        src: "AUDIO/the-last-star.mp3"
+
+        title:
+            "SleepStory",
+
+        category:
+            "Bedtime Stories",
+
+        type:
+            "local",
+
+        src:
+            "AUDIO/the-last-star.mp3"
+
     }
 
 ];
 
 
-/*
-   YouTube story library
-
-   IMPORTANT:
-   These are example entries.
-   Replace/add official YouTube video IDs
-   that you are allowed to embed.
-*/
+/* =========================================================
+   CATEGORY LIBRARY
+========================================================= */
 
 const storyCategories = {
 
     "Sunday Suspense": [
 
         {
-            title: "Sunday Suspense",
+
+            title:
+                "Sunday Suspense",
+
             description:
                 "Bengali suspense and thriller stories",
-            type: "youtube",
-            videoId: "AWQ-7O4jFIk"
+
+            type:
+                "youtube",
+
+            videoId:
+                "AWQ-7O4jFIk"
+
         },
 
         {
-            title: "Sunday Suspense Story",
+
+            title:
+                "Sunday Suspense Story",
+
             description:
                 "Mystery and suspense audio",
-            type: "youtube",
-            videoId: "w9W-LbYbeNs"
+
+            type:
+                "youtube",
+
+            videoId:
+                "w9W-LbYbeNs"
+
         }
 
     ],
@@ -197,19 +354,35 @@ const storyCategories = {
     "Mirchi Bangla": [
 
         {
-            title: "Mirchi Bangla",
+
+            title:
+                "Mirchi Bangla",
+
             description:
                 "Bengali audio storytelling",
-            type: "youtube",
-            videoId: "Ut5pYfY1YnY"
+
+            type:
+                "youtube",
+
+            videoId:
+                "Ut5pYfY1YnY"
+
         },
 
         {
-            title: "Mirchi Bangla Story",
+
+            title:
+                "Mirchi Bangla Story",
+
             description:
                 "Popular Bengali story",
-            type: "youtube",
-            videoId: "AWQ-7O4jFIk"
+
+            type:
+                "youtube",
+
+            videoId:
+                "AWQ-7O4jFIk"
+
         }
 
     ],
@@ -218,11 +391,19 @@ const storyCategories = {
     "Love Stories": [
 
         {
-            title: "Love Stories",
+
+            title:
+                "Love Stories",
+
             description:
                 "Romantic Bengali stories",
-            type: "youtube",
-            videoId: ""
+
+            type:
+                "youtube",
+
+            videoId:
+                ""
+
         }
 
     ],
@@ -231,11 +412,19 @@ const storyCategories = {
     "Horror Stories": [
 
         {
-            title: "Horror Stories",
+
+            title:
+                "Horror Stories",
+
             description:
                 "Ghost and paranormal stories",
-            type: "youtube",
-            videoId: ""
+
+            type:
+                "youtube",
+
+            videoId:
+                ""
+
         }
 
     ],
@@ -244,11 +433,19 @@ const storyCategories = {
     "Mystery & Thriller": [
 
         {
-            title: "Mystery & Thriller",
+
+            title:
+                "Mystery & Thriller",
+
             description:
                 "Mystery and investigation",
-            type: "youtube",
-            videoId: ""
+
+            type:
+                "youtube",
+
+            videoId:
+                ""
+
         }
 
     ],
@@ -257,11 +454,19 @@ const storyCategories = {
     "Crime Stories": [
 
         {
-            title: "Crime Stories",
+
+            title:
+                "Crime Stories",
+
             description:
                 "Crime and detective stories",
-            type: "youtube",
-            videoId: ""
+
+            type:
+                "youtube",
+
+            videoId:
+                ""
+
         }
 
     ],
@@ -270,11 +475,19 @@ const storyCategories = {
     "Emotional Stories": [
 
         {
-            title: "Emotional Stories",
+
+            title:
+                "Emotional Stories",
+
             description:
                 "Emotional and life stories",
-            type: "youtube",
-            videoId: ""
+
+            type:
+                "youtube",
+
+            videoId:
+                ""
+
         }
 
     ],
@@ -283,11 +496,19 @@ const storyCategories = {
     "Bedtime Stories": [
 
         {
-            title: "SleepStory",
+
+            title:
+                "SleepStory",
+
             description:
                 "Calm and relaxing bedtime audio",
-            type: "local",
-            src: "AUDIO/the-last-star.mp3"
+
+            type:
+                "local",
+
+            src:
+                "AUDIO/the-last-star.mp3"
+
         }
 
     ],
@@ -296,11 +517,19 @@ const storyCategories = {
     "Bengali Stories": [
 
         {
-            title: "Bengali Stories",
+
+            title:
+                "Bengali Stories",
+
             description:
                 "Bengali audio stories",
-            type: "youtube",
-            videoId: ""
+
+            type:
+                "youtube",
+
+            videoId:
+                ""
+
         }
 
     ],
@@ -309,11 +538,19 @@ const storyCategories = {
     "English Stories": [
 
         {
-            title: "English Stories",
+
+            title:
+                "English Stories",
+
             description:
                 "English audio stories",
-            type: "youtube",
-            videoId: ""
+
+            type:
+                "youtube",
+
+            videoId:
+                ""
+
         }
 
     ]
@@ -336,100 +573,146 @@ let currentStoryIndex = 0;
    INITIAL SETUP
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
 
-    if (audioPlayer) {
+        if (audioPlayer) {
 
-        audioPlayer.volume = 1;
+            audioPlayer.volume = 1;
 
-        audioPlayer.addEventListener(
-            "loadedmetadata",
-            updateDuration
-        );
 
-        audioPlayer.addEventListener(
-            "timeupdate",
-            updateProgress
-        );
+            audioPlayer.addEventListener(
+                "loadedmetadata",
+                updateDuration
+            );
 
-        audioPlayer.addEventListener(
-            "play",
-            function () {
 
-                youtubeStoryActive = false;
+            audioPlayer.addEventListener(
+                "timeupdate",
+                updateProgress
+            );
 
-                updatePlayButtons(true);
 
-                syncJamPlay();
-            }
-        );
+            audioPlayer.addEventListener(
+                "play",
+                function () {
 
-        audioPlayer.addEventListener(
-            "pause",
-            function () {
+                    if (
+                        suppressJamEvents
+                    ) {
 
-                if (!audioPlayer.ended) {
+                        return;
 
-                    updatePlayButtons(false);
+                    }
 
-                    syncJamPause();
+
+                    youtubeStoryActive =
+                        false;
+
+
+                    updatePlayButtons(
+                        true
+                    );
+
+
+                    syncJamPlay();
+
                 }
-            }
-        );
-
-        audioPlayer.addEventListener(
-            "ended",
-            function () {
-
-                updatePlayButtons(false);
-            }
-        );
-    }
+            );
 
 
-    /*
-       Hide YouTube player initially
-    */
+            audioPlayer.addEventListener(
+                "pause",
+                function () {
 
-    const youtubeContainer =
-        document.getElementById(
-            "youtubePlayerContainer"
-        );
+                    if (
+                        suppressJamEvents
+                    ) {
 
-    if (youtubeContainer) {
-        youtubeContainer.style.display = "none";
-    }
+                        return;
+
+                    }
 
 
-    /*
-       Enter key for chat
-    */
+                    if (
+                        !audioPlayer.ended
+                    ) {
 
-    const chatInput =
-        document.getElementById("chatInput");
+                        updatePlayButtons(
+                            false
+                        );
 
-    if (chatInput) {
 
-        chatInput.addEventListener(
-            "keydown",
-            function (event) {
+                        syncJamPause();
 
-                if (event.key === "Enter") {
-                    sendChatMessage();
+                    }
+
                 }
+            );
 
-            }
-        );
+
+            audioPlayer.addEventListener(
+                "ended",
+                function () {
+
+                    updatePlayButtons(
+                        false
+                    );
+
+                }
+            );
+
+        }
+
+
+        const youtubeContainer =
+            document.getElementById(
+                "youtubePlayerContainer"
+            );
+
+
+        if (youtubeContainer) {
+
+            youtubeContainer.style.display =
+                "none";
+
+        }
+
+
+        const chatInput =
+            document.getElementById(
+                "chatInput"
+            );
+
+
+        if (chatInput) {
+
+            chatInput.addEventListener(
+                "keydown",
+                function (event) {
+
+                    if (
+                        event.key ===
+                        "Enter"
+                    ) {
+
+                        event.preventDefault();
+
+                        sendChatMessage();
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        setupSocketEvents();
+
     }
-
-
-    /*
-       Socket events
-    */
-
-    setupSocketEvents();
-
-});
+);
 
 
 /* =========================================================
@@ -439,24 +722,38 @@ document.addEventListener("DOMContentLoaded", function () {
 function formatTime(seconds) {
 
     if (
-        !seconds ||
-        isNaN(seconds) ||
-        seconds < 0
+        !Number.isFinite(
+            Number(seconds)
+        ) ||
+        Number(seconds) < 0
     ) {
+
         return "0:00";
+
     }
 
+
     const minutes =
-        Math.floor(seconds / 60);
+        Math.floor(
+            Number(seconds) / 60
+        );
+
 
     const secs =
-        Math.floor(seconds % 60);
+        Math.floor(
+            Number(seconds) % 60
+        );
+
 
     return (
         minutes +
         ":" +
-        String(secs).padStart(2, "0")
+        String(secs).padStart(
+            2,
+            "0"
+        )
     );
+
 }
 
 
@@ -466,22 +763,32 @@ function formatTime(seconds) {
 
 function updateDuration() {
 
-    if (!audioPlayer) return;
+    if (!audioPlayer) {
+
+        return;
+
+    }
+
 
     const duration =
         audioPlayer.duration;
+
 
     if (durationElement) {
 
         durationElement.textContent =
             formatTime(duration);
+
     }
+
 
     if (fullDuration) {
 
         fullDuration.textContent =
             formatTime(duration);
+
     }
+
 }
 
 
@@ -491,10 +798,16 @@ function updateDuration() {
 
 function updateProgress() {
 
-    if (!audioPlayer) return;
+    if (!audioPlayer) {
+
+        return;
+
+    }
+
 
     const current =
         audioPlayer.currentTime;
+
 
     const duration =
         audioPlayer.duration;
@@ -504,6 +817,7 @@ function updateProgress() {
 
         currentTimeElement.textContent =
             formatTime(current);
+
     }
 
 
@@ -511,27 +825,37 @@ function updateProgress() {
 
         fullCurrentTime.textContent =
             formatTime(current);
+
     }
 
 
     if (
         progressBar &&
-        duration
+        duration > 0
     ) {
 
         progressBar.value =
-            (current / duration) * 100;
+            (
+                current /
+                duration
+            ) * 100;
+
     }
 
 
     if (
         fullProgressBar &&
-        duration
+        duration > 0
     ) {
 
         fullProgressBar.value =
-            (current / duration) * 100;
+            (
+                current /
+                duration
+            ) * 100;
+
     }
+
 }
 
 
@@ -541,30 +865,33 @@ function updateProgress() {
 
 function playLocalStory(story) {
 
-    if (!audioPlayer) return;
+    if (
+        !audioPlayer ||
+        !story
+    ) {
 
-    youtubeStoryActive = false;
+        return;
+
+    }
 
 
-    /*
-       Hide YouTube
-    */
+    youtubeStoryActive =
+        false;
+
 
     const youtubeContainer =
         document.getElementById(
             "youtubePlayerContainer"
         );
 
+
     if (youtubeContainer) {
 
         youtubeContainer.style.display =
             "none";
+
     }
 
-
-    /*
-       Stop YouTube
-    */
 
     if (
         youtubePlayer &&
@@ -572,42 +899,87 @@ function playLocalStory(story) {
     ) {
 
         try {
+
+            suppressJamEvents = true;
+
             youtubePlayer.stopVideo();
+
         } catch (error) {
+
             console.log(error);
+
+        } finally {
+
+            setTimeout(
+                function () {
+
+                    suppressJamEvents =
+                        false;
+
+                },
+                300
+            );
+
         }
+
     }
 
 
-    /*
-       Set local audio
-    */
+    currentStory =
+        story;
 
-    audioPlayer.src = story.src;
+
+    updateStoryInfo(
+        story
+    );
+
+
+    suppressJamEvents =
+        true;
+
+
+    audioPlayer.src =
+        story.src;
+
 
     audioPlayer.load();
 
 
-    currentStory = story;
-
-
-    updateStoryInfo(story);
+    audioPlayer.currentTime =
+        0;
 
 
     audioPlayer.play()
-        .then(function () {
+        .then(
+            function () {
 
-            updatePlayButtons(true);
+                suppressJamEvents =
+                    false;
 
-        })
-        .catch(function (error) {
 
-            console.log(
-                "Browser blocked autoplay:",
-                error
-            );
+                updatePlayButtons(
+                    true
+                );
 
-        });
+
+                syncStoryToJam();
+
+            }
+        )
+        .catch(
+            function (error) {
+
+                suppressJamEvents =
+                    false;
+
+                console.log(
+                    "Autoplay blocked:",
+                    error
+                );
+
+            }
+        );
+
 }
 
 
@@ -616,6 +988,24 @@ function playLocalStory(story) {
 ========================================================= */
 
 function playYouTubeStory(story) {
+
+    if (!story) {
+
+        return;
+
+    }
+
+
+    if (!story.videoId) {
+
+        alert(
+            "এই category-তে এখনও কোনো YouTube story যোগ করা হয়নি।"
+        );
+
+        return;
+
+    }
+
 
     if (
         !youtubePlayer ||
@@ -627,74 +1017,87 @@ function playYouTubeStory(story) {
         );
 
         return;
+
     }
 
-
-    if (!story.videoId) {
-
-        alert(
-            "এই category-তে এখনও কোনো YouTube story যোগ করা হয়নি।"
-        );
-
-        return;
-    }
-
-
-    /*
-       Pause local audio
-    */
 
     if (audioPlayer) {
 
+        suppressJamEvents =
+            true;
+
         audioPlayer.pause();
+
+        suppressJamEvents =
+            false;
+
     }
 
 
-    youtubeStoryActive = true;
+    youtubeStoryActive =
+        true;
 
 
-    /*
-       Show YouTube player
-    */
+    currentStory =
+        story;
+
+
+    updateStoryInfo(
+        story
+    );
+
 
     const youtubeContainer =
         document.getElementById(
             "youtubePlayerContainer"
         );
 
+
     if (youtubeContainer) {
 
         youtubeContainer.style.display =
             "block";
+
     }
 
 
-    /*
-       Load video
-    */
+    suppressJamEvents =
+        true;
+
 
     youtubePlayer.loadVideoById(
         story.videoId
     );
 
 
-    currentStory = story;
+    setTimeout(
+        function () {
 
+            suppressJamEvents =
+                false;
 
-    updateStoryInfo(story);
+        },
+        1000
+    );
 
-
-    /*
-       Scroll player into view
-    */
 
     if (youtubeContainer) {
 
         youtubeContainer.scrollIntoView({
-            behavior: "smooth",
-            block: "center"
+
+            behavior:
+                "smooth",
+
+            block:
+                "center"
+
         });
+
     }
+
+
+    syncStoryToJam();
+
 }
 
 
@@ -704,17 +1107,30 @@ function playYouTubeStory(story) {
 
 function playStory(story) {
 
-    if (!story) return;
+    if (!story) {
 
-    if (story.type === "youtube") {
+        return;
 
-        playYouTubeStory(story);
+    }
+
+
+    if (
+        story.type ===
+        "youtube"
+    ) {
+
+        playYouTubeStory(
+            story
+        );
 
     } else {
 
-        playLocalStory(story);
+        playLocalStory(
+            story
+        );
 
     }
+
 }
 
 
@@ -724,13 +1140,18 @@ function playStory(story) {
 
 function updateStoryInfo(story) {
 
-    if (!story) return;
+    if (!story) {
+
+        return;
+
+    }
 
 
     if (playerTitle) {
 
         playerTitle.textContent =
             story.title;
+
     }
 
 
@@ -738,7 +1159,9 @@ function updateStoryInfo(story) {
 
         fullPlayerTitle.textContent =
             story.title;
+
     }
+
 }
 
 
@@ -748,10 +1171,6 @@ function updateStoryInfo(story) {
 
 function togglePlay() {
 
-    /*
-       YouTube
-    */
-
     if (
         youtubeStoryActive &&
         youtubePlayer &&
@@ -760,6 +1179,10 @@ function togglePlay() {
 
         const state =
             youtubePlayer.getPlayerState();
+
+
+        suppressJamEvents =
+            false;
 
 
         if (
@@ -772,57 +1195,63 @@ function togglePlay() {
         } else {
 
             youtubePlayer.playVideo();
+
         }
 
 
         return;
+
     }
 
 
-    /*
-       Local audio
-    */
+    if (!audioPlayer) {
 
-    if (!audioPlayer) return;
+        return;
+
+    }
 
 
     if (audioPlayer.paused) {
 
         audioPlayer.play()
-            .then(function () {
+            .catch(
+                function (error) {
 
-                updatePlayButtons(true);
+                    console.error(
+                        error
+                    );
 
-            })
-            .catch(function (error) {
-
-                console.error(error);
-
-            });
+                }
+            );
 
     } else {
 
         audioPlayer.pause();
 
-        updatePlayButtons(false);
     }
+
 }
 
 
 /* =========================================================
-   UPDATE PLAY BUTTONS
+   PLAY BUTTONS
 ========================================================= */
 
-function updatePlayButtons(isPlaying) {
+function updatePlayButtons(
+    isPlaying
+) {
 
     const icon =
-        isPlaying ? "❚❚" : "▶";
+        isPlaying
+            ? "❚❚"
+            : "▶";
 
 
     if (fullPlayButton) {
 
         fullPlayButton.textContent =
             icon;
+
     }
 
 
@@ -830,55 +1259,101 @@ function updatePlayButtons(isPlaying) {
 
         playButton.textContent =
             icon;
+
     }
+
 }
 
 
 /* =========================================================
-   PROGRESS BAR
+   LOCAL PROGRESS
 ========================================================= */
 
 function changeProgress() {
 
-    if (!audioPlayer) return;
+    if (!audioPlayer) {
+
+        return;
+
+    }
+
 
     const duration =
         audioPlayer.duration;
 
 
-    if (!duration) return;
+    if (!duration) {
+
+        return;
+
+    }
 
 
     const percentage =
-        Number(progressBar.value);
+        Number(
+            progressBar.value
+        );
+
+
+    const time =
+        (
+            percentage /
+            100
+        ) * duration;
 
 
     audioPlayer.currentTime =
-        (percentage / 100) * duration;
+        time;
+
+
+    syncJamSeek();
+
 }
 
 
 /* =========================================================
-   FULL PLAYER PROGRESS
+   FULL PROGRESS
 ========================================================= */
 
 function changeProgressFull() {
 
-    if (!audioPlayer) return;
+    if (!audioPlayer) {
+
+        return;
+
+    }
+
 
     const duration =
         audioPlayer.duration;
 
 
-    if (!duration) return;
+    if (!duration) {
+
+        return;
+
+    }
 
 
     const percentage =
-        Number(fullProgressBar.value);
+        Number(
+            fullProgressBar.value
+        );
+
+
+    const time =
+        (
+            percentage /
+            100
+        ) * duration;
 
 
     audioPlayer.currentTime =
-        (percentage / 100) * duration;
+        time;
+
+
+    syncJamSeek();
+
 }
 
 
@@ -888,11 +1363,16 @@ function changeProgressFull() {
 
 function toggleMute() {
 
-    if (!audioPlayer) return;
+    if (!audioPlayer) {
+
+        return;
+
+    }
 
 
     audioPlayer.muted =
         !audioPlayer.muted;
+
 }
 
 
@@ -911,16 +1391,18 @@ function setSleepTimer() {
         );
 
 
-    if (!select) return;
+    if (!select) {
+
+        return;
+
+    }
 
 
     const minutes =
-        Number(select.value);
+        Number(
+            select.value
+        );
 
-
-    /*
-       Cancel existing timer
-    */
 
     if (sleepTimerTimeout) {
 
@@ -928,19 +1410,26 @@ function setSleepTimer() {
             sleepTimerTimeout
         );
 
-        sleepTimerTimeout = null;
+        sleepTimerTimeout =
+            null;
+
     }
 
 
     if (minutes === 0) {
 
         return;
+
     }
 
 
     sleepTimerTimeout =
         setTimeout(
             function () {
+
+                suppressJamEvents =
+                    false;
+
 
                 if (
                     youtubeStoryActive &&
@@ -953,23 +1442,24 @@ function setSleepTimer() {
                 } else if (audioPlayer) {
 
                     audioPlayer.pause();
+
                 }
 
 
-                select.value = "0";
+                select.value =
+                    "0";
+
 
                 alert(
                     "🌙 Sleep timer finished."
                 );
 
             },
-            minutes * 60 * 1000
+            minutes *
+            60 *
+            1000
         );
 
-
-    console.log(
-        `Sleep timer set for ${minutes} minutes`
-    );
 }
 
 
@@ -984,16 +1474,21 @@ function previousStory() {
     ) {
 
         return;
+
     }
 
 
     currentStoryIndex--;
 
 
-    if (currentStoryIndex < 0) {
+    if (
+        currentStoryIndex < 0
+    ) {
 
         currentStoryIndex =
-            currentCategoryStories.length - 1;
+            currentCategoryStories.length -
+            1;
+
     }
 
 
@@ -1002,6 +1497,7 @@ function previousStory() {
             currentStoryIndex
         ]
     );
+
 }
 
 
@@ -1016,6 +1512,7 @@ function nextStory() {
     ) {
 
         return;
+
     }
 
 
@@ -1027,7 +1524,9 @@ function nextStory() {
         currentCategoryStories.length
     ) {
 
-        currentStoryIndex = 0;
+        currentStoryIndex =
+            0;
+
     }
 
 
@@ -1036,6 +1535,7 @@ function nextStory() {
             currentStoryIndex
         ]
     );
+
 }
 
 
@@ -1051,7 +1551,11 @@ function toggleSearch() {
         );
 
 
-    if (!searchBox) return;
+    if (!searchBox) {
+
+        return;
+
+    }
 
 
     if (
@@ -1077,22 +1581,19 @@ function toggleSearch() {
         if (input) {
 
             input.focus();
+
         }
+
     }
+
 }
 
-
-/*
-   Works with:
-   searchStories()
-   and
-   searchStories("text")
-*/
 
 function searchStories(query) {
 
     if (
-        typeof query !== "string"
+        typeof query !==
+        "string"
     ) {
 
         const input =
@@ -1100,10 +1601,12 @@ function searchStories(query) {
                 "searchInput"
             );
 
+
         query =
-            input ?
-            input.value :
-            "";
+            input
+                ? input.value
+                : "";
+
     }
 
 
@@ -1113,40 +1616,45 @@ function searchStories(query) {
             .toLowerCase();
 
 
-    if (!query) return;
+    if (!query) {
 
+        return;
 
-    /*
-       Search categories
-    */
+    }
+
 
     const category =
         Object.keys(
             storyCategories
-        ).find(function (name) {
+        ).find(
+            function (name) {
 
-            return name
-                .toLowerCase()
-                .includes(query);
+                return name
+                    .toLowerCase()
+                    .includes(
+                        query
+                    );
 
-        });
+            }
+        );
 
 
     if (category) {
 
-        openCategory(category);
+        openCategory(
+            category
+        );
 
         return;
+
     }
 
 
-    /*
-       Search stories
-    */
-
     for (
         const categoryName
-        of Object.keys(storyCategories)
+        of Object.keys(
+            storyCategories
+        )
     ) {
 
         const list =
@@ -1156,15 +1664,17 @@ function searchStories(query) {
 
 
         const index =
-            list.findIndex(function (story) {
+            list.findIndex(
+                function (story) {
 
-                return (
-                    story.title
+                    return story.title
                         .toLowerCase()
-                        .includes(query)
-                );
+                        .includes(
+                            query
+                        );
 
-            });
+                }
+            );
 
 
         if (index !== -1) {
@@ -1174,19 +1684,22 @@ function searchStories(query) {
             );
 
             return;
+
         }
+
     }
 
 
     console.log(
-        "No story found for:",
+        "No story found:",
         query
     );
+
 }
 
 
 /* =========================================================
-   OPEN CATEGORY
+   CATEGORY MODAL
 ========================================================= */
 
 function openCategory(category) {
@@ -1207,9 +1720,14 @@ function openCategory(category) {
         );
 
 
-    if (!modal || !title || !library) {
+    if (
+        !modal ||
+        !title ||
+        !library
+    ) {
 
         return;
+
     }
 
 
@@ -1217,7 +1735,8 @@ function openCategory(category) {
         category;
 
 
-    library.innerHTML = "";
+    library.innerHTML =
+        "";
 
 
     const categoryStories =
@@ -1230,26 +1749,40 @@ function openCategory(category) {
         categoryStories;
 
 
-    currentStoryIndex = 0;
+    currentStoryIndex =
+        0;
 
 
     if (
-        categoryStories.length === 0
+        categoryStories.length ===
+        0
     ) {
 
         library.innerHTML = `
+
             <div class="story-library-item">
+
                 <div class="story-library-info">
+
                     <h3>No stories yet</h3>
-                    <p>Stories will be added here soon.</p>
+
+                    <p>
+                        Stories will be added here soon.
+                    </p>
+
                 </div>
+
             </div>
+
         `;
 
     } else {
 
         categoryStories.forEach(
-            function (story, index) {
+            function (
+                story,
+                index
+            ) {
 
                 const item =
                     document.createElement(
@@ -1261,7 +1794,8 @@ function openCategory(category) {
                     "story-library-item";
 
 
-                let image = "🎧";
+                let image =
+                    "🎧";
 
 
                 if (
@@ -1269,35 +1803,41 @@ function openCategory(category) {
                     "Horror Stories"
                 ) {
 
-                    image = "👻";
+                    image =
+                        "👻";
 
                 } else if (
                     category ===
                     "Love Stories"
                 ) {
 
-                    image = "❤️";
+                    image =
+                        "❤️";
 
                 } else if (
                     category ===
                     "Mystery & Thriller"
                 ) {
 
-                    image = "🔍";
+                    image =
+                        "🔍";
 
                 } else if (
                     category ===
                     "Crime Stories"
                 ) {
 
-                    image = "🕵️";
+                    image =
+                        "🕵️";
 
                 } else if (
                     category ===
                     "Bedtime Stories"
                 ) {
 
-                    image = "🌙";
+                    image =
+                        "🌙";
+
                 }
 
 
@@ -1347,8 +1887,8 @@ function openCategory(category) {
                                 ${
                                     story.type ===
                                     "youtube"
-                                    ? "▶ YouTube"
-                                    : "🎧 Audio"
+                                        ? "▶ YouTube"
+                                        : "🎧 Audio"
                                 }
                             </span>
 
@@ -1361,25 +1901,32 @@ function openCategory(category) {
                         class="story-library-play"
                         onclick="
                             playCategoryStory(
-                                '${escapeAttribute(category)}',
+                                '${escapeAttribute(
+                                    category
+                                )}',
                                 ${index}
                             )
                         "
                     >
                         ▶
                     </button>
+
                 `;
 
 
-                library.appendChild(item);
+                library.appendChild(
+                    item
+                );
 
             }
         );
+
     }
 
 
     modal.style.display =
         "flex";
+
 }
 
 
@@ -1398,9 +1945,13 @@ function playCategoryStory(
         ];
 
 
-    if (!list || !list[index]) {
+    if (
+        !list ||
+        !list[index]
+    ) {
 
         return;
+
     }
 
 
@@ -1420,11 +1971,8 @@ function playCategoryStory(
     closeCategory();
 
 
-    /*
-       Open full player
-    */
-
     openFullPlayer();
+
 }
 
 
@@ -1444,20 +1992,14 @@ function closeCategory() {
 
         modal.style.display =
             "none";
+
     }
+
 }
 
 
 /* =========================================================
-   JAM
-========================================================= */
-
-let roomCode = null;
-let isHost = false;
-
-
-/* =========================================================
-   OPEN JAM CHOICE
+   JAM — OPEN CHOICE
 ========================================================= */
 
 function openJamChoice() {
@@ -1472,13 +2014,11 @@ function openJamChoice() {
 
         modal.style.display =
             "flex";
+
     }
+
 }
 
-
-/* =========================================================
-   CLOSE JAM CHOICE
-========================================================= */
 
 function closeJamChoice() {
 
@@ -1492,12 +2032,14 @@ function closeJamChoice() {
 
         modal.style.display =
             "none";
+
     }
+
 }
 
 
 /* =========================================================
-   CREATE ROOM
+   JAM — CREATE ROOM
 ========================================================= */
 
 function createRoom() {
@@ -1509,6 +2051,20 @@ function createRoom() {
         );
 
         return;
+
+    }
+
+
+    if (
+        !socket.connected
+    ) {
+
+        alert(
+            "Connecting to SleepStory server. Please try again in a moment."
+        );
+
+        return;
+
     }
 
 
@@ -1516,13 +2072,22 @@ function createRoom() {
         "create-room",
         function (response) {
 
-            if (!response) {
+            console.log(
+                "Create room response:",
+                response
+            );
+
+
+            if (
+                !response
+            ) {
 
                 alert(
-                    "Could not create room."
+                    "Server did not return a room code."
                 );
 
                 return;
+
             }
 
 
@@ -1536,15 +2101,41 @@ function createRoom() {
                 );
 
                 return;
+
             }
 
 
             roomCode =
-                response.roomCode ||
-                response.code;
+                (
+                    response.roomCode ||
+                    response.code ||
+                    ""
+                )
+                    .toUpperCase();
 
 
-            isHost = true;
+            if (
+                roomCode.length !==
+                6
+            ) {
+
+                alert(
+                    "Invalid room code received from server."
+                );
+
+                return;
+
+            }
+
+
+            isHost =
+                true;
+
+
+            console.log(
+                "🌙 Created Jam:",
+                roomCode
+            );
 
 
             showRoomModal(
@@ -1556,14 +2147,17 @@ function createRoom() {
 
         }
     );
+
 }
 
 
 /* =========================================================
-   SHOW ROOM MODAL
+   JAM — SHOW ROOM MODAL
 ========================================================= */
 
-function showRoomModal(isCreating) {
+function showRoomModal(
+    isCreating
+) {
 
     const modal =
         document.getElementById(
@@ -1596,7 +2190,11 @@ function showRoomModal(isCreating) {
         );
 
 
-    if (!modal) return;
+    if (!modal) {
+
+        return;
+
+    }
 
 
     if (isCreating) {
@@ -1605,13 +2203,15 @@ function showRoomModal(isCreating) {
 
             title.textContent =
                 "Your Jam Room";
+
         }
 
 
         if (text) {
 
             text.textContent =
-                "Share this code with your friend.";
+                "Share this 6-character code with your friend.";
+
         }
 
 
@@ -1620,6 +2220,7 @@ function showRoomModal(isCreating) {
             code.textContent =
                 roomCode ||
                 "------";
+
         }
 
 
@@ -1627,6 +2228,7 @@ function showRoomModal(isCreating) {
 
             input.style.display =
                 "none";
+
         }
 
 
@@ -1635,8 +2237,14 @@ function showRoomModal(isCreating) {
             action.textContent =
                 "Close";
 
+
             action.onclick =
-                closeModal;
+                function () {
+
+                    closeModal();
+
+                };
+
         }
 
     } else {
@@ -1645,6 +2253,7 @@ function showRoomModal(isCreating) {
 
             title.textContent =
                 "Join a Jam";
+
         }
 
 
@@ -1652,6 +2261,7 @@ function showRoomModal(isCreating) {
 
             text.textContent =
                 "Enter your friend's 6-character room code.";
+
         }
 
 
@@ -1659,6 +2269,7 @@ function showRoomModal(isCreating) {
 
             code.textContent =
                 "------";
+
         }
 
 
@@ -1667,9 +2278,9 @@ function showRoomModal(isCreating) {
             input.style.display =
                 "block";
 
-            input.value = "";
+            input.value =
+                "";
 
-            input.focus();
         }
 
 
@@ -1678,27 +2289,47 @@ function showRoomModal(isCreating) {
             action.textContent =
                 "Join Room";
 
+
             action.onclick =
-                joinRoom;
+                function () {
+
+                    joinRoom();
+
+                };
+
         }
+
     }
 
 
     modal.style.display =
         "flex";
+
+
+    if (
+        !isCreating &&
+        input
+    ) {
+
+        setTimeout(
+            function () {
+
+                input.focus();
+
+            },
+            100
+        );
+
+    }
+
 }
 
 
 /* =========================================================
-   JOIN ROOM
+   JAM — JOIN ROOM
 ========================================================= */
 
 function joinRoom() {
-
-    /*
-       If modal is not open,
-       open Join modal
-    */
 
     const modal =
         document.getElementById(
@@ -1712,9 +2343,12 @@ function joinRoom() {
         "flex"
     ) {
 
-        showRoomModal(false);
+        showRoomModal(
+            false
+        );
 
         return;
+
     }
 
 
@@ -1724,7 +2358,11 @@ function joinRoom() {
         );
 
 
-    if (!input) return;
+    if (!input) {
+
+        return;
+
+    }
 
 
     const code =
@@ -1733,13 +2371,17 @@ function joinRoom() {
             .toUpperCase();
 
 
-    if (code.length !== 6) {
+    if (
+        code.length !==
+        6
+    ) {
 
         alert(
             "Please enter a valid 6-character room code."
         );
 
         return;
+
     }
 
 
@@ -1750,19 +2392,53 @@ function joinRoom() {
         );
 
         return;
+
+    }
+
+
+    if (
+        !socket.connected
+    ) {
+
+        alert(
+            "Connecting to SleepStory server. Please wait a moment."
+        );
+
+        return;
+
     }
 
 
     socket.emit(
         "join-room",
         {
-            roomCode: code
+            roomCode:
+                code
         },
         function (response) {
 
+            console.log(
+                "Join room response:",
+                response
+            );
+
+
             if (
-                response &&
-                response.success === false
+                !response
+            ) {
+
+                alert(
+                    "Server did not respond."
+                );
+
+                return;
+
+            }
+
+
+            if (
+                response.success ===
+                false
             ) {
 
                 alert(
@@ -1771,25 +2447,42 @@ function joinRoom() {
                 );
 
                 return;
+
             }
 
 
             roomCode =
-                code;
+                (
+                    response.roomCode ||
+                    code
+                )
+                    .toUpperCase();
 
 
-            isHost = false;
+            isHost =
+                false;
+
+
+            updateRoomInfo();
+
+
+            /*
+               Room state will also arrive
+               through room-joined event.
+            */
+
+            applyJamRoomState(
+                response
+            );
 
 
             showRoomModal(
                 true
             );
 
-
-            updateRoomInfo();
-
         }
     );
+
 }
 
 
@@ -1809,7 +2502,9 @@ function closeModal() {
 
         modal.style.display =
             "none";
+
     }
+
 }
 
 
@@ -1825,7 +2520,11 @@ function updateRoomInfo() {
         );
 
 
-    if (!info) return;
+    if (!info) {
+
+        return;
+
+    }
 
 
     if (roomCode) {
@@ -1837,15 +2536,71 @@ function updateRoomInfo() {
 
         info.textContent =
             "";
+
     }
+
 }
 
 
 /* =========================================================
-   JAM SYNC
+   SEND STORY TO JAM
+========================================================= */
+
+function syncStoryToJam() {
+
+    if (
+        !socket ||
+        !roomCode ||
+        !currentStory
+    ) {
+
+        return;
+
+    }
+
+
+    socket.emit(
+        "story-change",
+        {
+
+            story: {
+
+                title:
+                    currentStory.title,
+
+                type:
+                    currentStory.type,
+
+                src:
+                    currentStory.src ||
+                    null,
+
+                videoId:
+                    currentStory.videoId ||
+                    null
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   JAM PLAY
 ========================================================= */
 
 function syncJamPlay() {
+
+    if (
+        suppressJamEvents
+    ) {
+
+        return;
+
+    }
+
 
     if (
         !socket ||
@@ -1853,10 +2608,12 @@ function syncJamPlay() {
     ) {
 
         return;
+
     }
 
 
-    let currentTime = 0;
+    let currentTime =
+        0;
 
 
     if (
@@ -1866,25 +2623,32 @@ function syncJamPlay() {
     ) {
 
         currentTime =
-            youtubePlayer.getCurrentTime();
+            Number(
+                youtubePlayer.getCurrentTime()
+            ) || 0;
 
-    } else if (audioPlayer) {
+    } else if (
+        audioPlayer
+    ) {
 
         currentTime =
-            audioPlayer.currentTime;
+            Number(
+                audioPlayer.currentTime
+            ) || 0;
+
     }
 
 
     socket.emit(
         "play",
         {
-            roomCode:
-                roomCode,
 
             currentTime:
                 currentTime
+
         }
     );
+
 }
 
 
@@ -1895,15 +2659,26 @@ function syncJamPlay() {
 function syncJamPause() {
 
     if (
+        suppressJamEvents
+    ) {
+
+        return;
+
+    }
+
+
+    if (
         !socket ||
         !roomCode
     ) {
 
         return;
+
     }
 
 
-    let currentTime = 0;
+    let currentTime =
+        0;
 
 
     if (
@@ -1913,25 +2688,32 @@ function syncJamPause() {
     ) {
 
         currentTime =
-            youtubePlayer.getCurrentTime();
+            Number(
+                youtubePlayer.getCurrentTime()
+            ) || 0;
 
-    } else if (audioPlayer) {
+    } else if (
+        audioPlayer
+    ) {
 
         currentTime =
-            audioPlayer.currentTime;
+            Number(
+                audioPlayer.currentTime
+            ) || 0;
+
     }
 
 
     socket.emit(
         "pause",
         {
-            roomCode:
-                roomCode,
 
             currentTime:
                 currentTime
+
         }
     );
+
 }
 
 
@@ -1942,15 +2724,26 @@ function syncJamPause() {
 function syncJamSeek() {
 
     if (
+        suppressJamEvents
+    ) {
+
+        return;
+
+    }
+
+
+    if (
         !socket ||
         !roomCode
     ) {
 
         return;
+
     }
 
 
-    let currentTime = 0;
+    let currentTime =
+        0;
 
 
     if (
@@ -1960,25 +2753,32 @@ function syncJamSeek() {
     ) {
 
         currentTime =
-            youtubePlayer.getCurrentTime();
+            Number(
+                youtubePlayer.getCurrentTime()
+            ) || 0;
 
-    } else if (audioPlayer) {
+    } else if (
+        audioPlayer
+    ) {
 
         currentTime =
-            audioPlayer.currentTime;
+            Number(
+                audioPlayer.currentTime
+            ) || 0;
+
     }
 
 
     socket.emit(
         "seek",
         {
-            roomCode:
-                roomCode,
 
             currentTime:
                 currentTime
+
         }
     );
+
 }
 
 
@@ -1988,19 +2788,23 @@ function syncJamSeek() {
 
 function setupSocketEvents() {
 
-    if (!socket) return;
+    if (!socket) {
+
+        return;
+
+    }
 
 
-    /*
-       Connected
-    */
+    /* -----------------------------------------------------
+       CONNECT
+    ----------------------------------------------------- */
 
     socket.on(
         "connect",
         function () {
 
             console.log(
-                "Connected to SleepStory backend:",
+                "🟢 Connected to SleepStory:",
                 socket.id
             );
 
@@ -2008,22 +2812,50 @@ function setupSocketEvents() {
     );
 
 
-    /*
-       Room created
-    */
+    /* -----------------------------------------------------
+       CONNECT ERROR
+    ----------------------------------------------------- */
+
+    socket.on(
+        "connect_error",
+        function (error) {
+
+            console.error(
+                "🔴 Socket connection error:",
+                error.message
+            );
+
+        }
+    );
+
+
+    /* -----------------------------------------------------
+       ROOM CREATED
+    ----------------------------------------------------- */
 
     socket.on(
         "room-created",
         function (data) {
 
-            if (!data) return;
+            if (!data) {
+
+                return;
+
+            }
+
 
             roomCode =
-                data.roomCode ||
-                data.code ||
-                roomCode;
+                (
+                    data.roomCode ||
+                    data.code ||
+                    roomCode
+                )
+                    .toUpperCase();
 
-            isHost = true;
+
+            isHost =
+                true;
+
 
             updateRoomInfo();
 
@@ -2031,176 +2863,182 @@ function setupSocketEvents() {
     );
 
 
-    /*
-       Room joined
-    */
+    /* -----------------------------------------------------
+       ROOM JOINED
+    ----------------------------------------------------- */
 
     socket.on(
         "room-joined",
         function (data) {
 
-            if (!data) return;
+            if (!data) {
+
+                return;
+
+            }
+
 
             roomCode =
-                data.roomCode ||
-                roomCode;
+                (
+                    data.roomCode ||
+                    roomCode
+                )
+                    .toUpperCase();
 
-            isHost = false;
+
+            isHost =
+                false;
+
 
             updateRoomInfo();
 
+
+            applyJamRoomState(
+                data
+            );
+
         }
     );
 
 
-    /*
-       Play from host
-    */
+    /* -----------------------------------------------------
+       ROOM ERROR
+    ----------------------------------------------------- */
 
     socket.on(
-        "play",
+        "room-error",
+        function (message) {
+
+            alert(
+                message ||
+                "Room error."
+            );
+
+        }
+    );
+
+
+    /* -----------------------------------------------------
+       SYNC PLAY
+    ----------------------------------------------------- */
+
+    socket.on(
+        "sync-play",
         function (data) {
 
-            if (!data) return;
+            if (!data) {
 
-
-            /*
-               Don't replay our own event
-               when already playing
-            */
-
-            const time =
-                Number(
-                    data.currentTime ||
-                    0
-                );
-
-
-            if (
-                youtubeStoryActive &&
-                youtubePlayer &&
-                youtubeReady
-            ) {
-
-                try {
-
-                    youtubePlayer.seekTo(
-                        time,
-                        true
-                    );
-
-                    youtubePlayer.playVideo();
-
-                } catch (error) {
-
-                    console.log(error);
-                }
-
-
-            } else if (audioPlayer) {
-
-                audioPlayer.currentTime =
-                    time;
-
-                audioPlayer.play()
-                    .catch(function () {});
+                return;
 
             }
 
 
-            updatePlayButtons(true);
+            const time =
+                Number(
+                    data.currentTime
+                ) || 0;
+
+
+            applyRemotePlay(
+                time
+            );
+
         }
     );
 
 
-    /*
-       Pause
-    */
+    /* -----------------------------------------------------
+       SYNC PAUSE
+    ----------------------------------------------------- */
 
     socket.on(
-        "pause",
+        "sync-pause",
         function (data) {
 
-            if (!data) return;
+            if (!data) {
+
+                return;
+
+            }
 
 
             const time =
                 Number(
-                    data.currentTime ||
-                    0
-                );
+                    data.currentTime
+                ) || 0;
 
 
-            if (
-                youtubeStoryActive &&
-                youtubePlayer &&
-                youtubeReady
-            ) {
+            applyRemotePause(
+                time
+            );
 
-                youtubePlayer.seekTo(
-                    time,
-                    true
-                );
-
-                youtubePlayer.pauseVideo();
-
-
-            } else if (audioPlayer) {
-
-                audioPlayer.currentTime =
-                    time;
-
-                audioPlayer.pause();
-            }
-
-
-            updatePlayButtons(false);
         }
     );
 
 
-    /*
-       Seek
-    */
+    /* -----------------------------------------------------
+       SYNC SEEK
+    ----------------------------------------------------- */
 
     socket.on(
-        "seek",
+        "sync-seek",
         function (data) {
 
-            if (!data) return;
+            if (!data) {
+
+                return;
+
+            }
 
 
             const time =
                 Number(
-                    data.currentTime ||
-                    0
-                );
+                    data.currentTime
+                ) || 0;
 
 
-            if (
-                youtubeStoryActive &&
-                youtubePlayer &&
-                youtubeReady
-            ) {
+            applyRemoteSeek(
+                time
+            );
 
-                youtubePlayer.seekTo(
-                    time,
-                    true
-                );
-
-
-            } else if (audioPlayer) {
-
-                audioPlayer.currentTime =
-                    time;
-            }
         }
     );
 
 
-    /*
-       User count
-    */
+    /* -----------------------------------------------------
+       SYNC STORY
+    ----------------------------------------------------- */
+
+    socket.on(
+        "sync-story",
+        function (data) {
+
+            if (!data) {
+
+                return;
+
+            }
+
+
+            if (
+                data.story
+            ) {
+
+                applyRemoteStory(
+                    data.story,
+                    data.currentTime || 0,
+                    data.isPlaying || false
+                );
+
+            }
+
+        }
+    );
+
+
+    /* -----------------------------------------------------
+       USER COUNT
+    ----------------------------------------------------- */
 
     socket.on(
         "user-count",
@@ -2209,70 +3047,575 @@ function setupSocketEvents() {
             updateUserCount(
                 count
             );
+
         }
     );
 
 
-    socket.on(
-        "room-users",
-        function (count) {
-
-            updateUserCount(
-                count
-            );
-        }
-    );
-
-
-    /*
-       Reaction
-    */
+    /* -----------------------------------------------------
+       REACTION
+    ----------------------------------------------------- */
 
     socket.on(
-        "reaction",
+        "sync-reaction",
         function (data) {
 
-            if (!data) return;
+            if (!data) {
+
+                return;
+
+            }
+
 
             showReaction(
-                data.emoji ||
-                data
+                data.emoji
             );
+
         }
     );
 
 
-    /*
-       Chat
-    */
+    /* -----------------------------------------------------
+       CHAT
+    ----------------------------------------------------- */
 
     socket.on(
-        "chat-message",
+        "new-chat-message",
         function (data) {
 
-            if (!data) return;
+            if (!data) {
+
+                return;
+
+            }
 
 
             addChatMessage(
                 data.message ||
-                data.text ||
                 "",
-                data.username ||
                 "Listener"
             );
+
         }
     );
 
+
+    /* -----------------------------------------------------
+       DISCONNECT
+    ----------------------------------------------------- */
 
     socket.on(
         "disconnect",
         function () {
 
             console.log(
-                "Disconnected from backend"
+                "🔴 Disconnected from SleepStory server"
             );
+
         }
     );
+
+}
+
+
+/* =========================================================
+   APPLY ROOM STATE
+========================================================= */
+
+function applyJamRoomState(
+    data
+) {
+
+    if (!data) {
+
+        return;
+
+    }
+
+
+    /*
+       Story
+    */
+
+    if (
+        data.story
+    ) {
+
+        applyRemoteStory(
+            data.story,
+            Number(
+                data.currentTime
+            ) || 0,
+            Boolean(
+                data.isPlaying
+            )
+        );
+
+        return;
+
+    }
+
+
+    /*
+       No story information
+       but playback state exists.
+    */
+
+    const time =
+        Number(
+            data.currentTime
+        ) || 0;
+
+
+    if (
+        data.isPlaying
+    ) {
+
+        applyRemotePlay(
+            time
+        );
+
+    } else {
+
+        applyRemotePause(
+            time
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   APPLY REMOTE STORY
+========================================================= */
+
+function applyRemoteStory(
+    story,
+    currentTime,
+    shouldPlay
+) {
+
+    if (!story) {
+
+        return;
+
+    }
+
+
+    suppressJamEvents =
+        true;
+
+
+    currentStory =
+        story;
+
+
+    updateStoryInfo(
+        story
+    );
+
+
+    if (
+        story.type ===
+        "youtube" &&
+        story.videoId
+    ) {
+
+        youtubeStoryActive =
+            true;
+
+
+        const youtubeContainer =
+            document.getElementById(
+                "youtubePlayerContainer"
+            );
+
+
+        if (youtubeContainer) {
+
+            youtubeContainer.style.display =
+                "block";
+
+        }
+
+
+        if (
+            youtubePlayer &&
+            youtubeReady
+        ) {
+
+            youtubePlayer.loadVideoById(
+                story.videoId
+            );
+
+
+            setTimeout(
+                function () {
+
+                    if (
+                        !youtubePlayer ||
+                        !youtubeReady
+                    ) {
+
+                        suppressJamEvents =
+                            false;
+
+                        return;
+
+                    }
+
+
+                    try {
+
+                        youtubePlayer.seekTo(
+                            Number(
+                                currentTime
+                            ) || 0,
+                            true
+                        );
+
+
+                        if (shouldPlay) {
+
+                            youtubePlayer.playVideo();
+
+                        } else {
+
+                            youtubePlayer.pauseVideo();
+
+                        }
+
+                    } catch (
+                        error
+                    ) {
+
+                        console.error(
+                            error
+                        );
+
+                    }
+
+
+                    suppressJamEvents =
+                        false;
+
+                },
+                700
+            );
+
+        } else {
+
+            suppressJamEvents =
+                false;
+
+        }
+
+
+    } else if (
+        story.type ===
+        "local" &&
+        story.src
+    ) {
+
+        youtubeStoryActive =
+            false;
+
+
+        const youtubeContainer =
+            document.getElementById(
+                "youtubePlayerContainer"
+            );
+
+
+        if (youtubeContainer) {
+
+            youtubeContainer.style.display =
+                "none";
+
+        }
+
+
+        if (audioPlayer) {
+
+            audioPlayer.src =
+                story.src;
+
+
+            audioPlayer.load();
+
+
+            const targetTime =
+                Number(
+                    currentTime
+                ) || 0;
+
+
+            audioPlayer.addEventListener(
+                "loadedmetadata",
+                function onLoaded() {
+
+                    audioPlayer.removeEventListener(
+                        "loadedmetadata",
+                        onLoaded
+                    );
+
+
+                    audioPlayer.currentTime =
+                        targetTime;
+
+
+                    if (shouldPlay) {
+
+                        audioPlayer.play()
+                            .catch(
+                                function () {}
+                            );
+
+                    } else {
+
+                        audioPlayer.pause();
+
+                    }
+
+
+                    suppressJamEvents =
+                        false;
+
+                }
+            );
+
+        } else {
+
+            suppressJamEvents =
+                false;
+
+        }
+
+    } else {
+
+        suppressJamEvents =
+            false;
+
+    }
+
+}
+
+
+/* =========================================================
+   REMOTE PLAY
+========================================================= */
+
+function applyRemotePlay(
+    time
+) {
+
+    suppressJamEvents =
+        true;
+
+
+    if (
+        youtubeStoryActive &&
+        youtubePlayer &&
+        youtubeReady
+    ) {
+
+        try {
+
+            youtubePlayer.seekTo(
+                time,
+                true
+            );
+
+
+            youtubePlayer.playVideo();
+
+        } catch (
+            error
+        ) {
+
+            console.error(
+                error
+            );
+
+        }
+
+
+        setTimeout(
+            function () {
+
+                suppressJamEvents =
+                    false;
+
+            },
+            500
+        );
+
+
+    } else if (
+        audioPlayer
+    ) {
+
+        audioPlayer.currentTime =
+            time;
+
+
+        audioPlayer.play()
+            .catch(
+                function () {}
+            );
+
+
+        setTimeout(
+            function () {
+
+                suppressJamEvents =
+                    false;
+
+            },
+            300
+        );
+
+    } else {
+
+        suppressJamEvents =
+            false;
+
+    }
+
+
+    updatePlayButtons(
+        true
+    );
+
+}
+
+
+/* =========================================================
+   REMOTE PAUSE
+========================================================= */
+
+function applyRemotePause(
+    time
+) {
+
+    suppressJamEvents =
+        true;
+
+
+    if (
+        youtubeStoryActive &&
+        youtubePlayer &&
+        youtubeReady
+    ) {
+
+        try {
+
+            youtubePlayer.seekTo(
+                time,
+                true
+            );
+
+
+            youtubePlayer.pauseVideo();
+
+        } catch (
+            error
+        ) {
+
+            console.error(
+                error
+            );
+
+        }
+
+
+    } else if (
+        audioPlayer
+    ) {
+
+        audioPlayer.currentTime =
+            time;
+
+
+        audioPlayer.pause();
+
+    }
+
+
+    updatePlayButtons(
+        false
+    );
+
+
+    setTimeout(
+        function () {
+
+            suppressJamEvents =
+                false;
+
+        },
+        500
+    );
+
+}
+
+
+/* =========================================================
+   REMOTE SEEK
+========================================================= */
+
+function applyRemoteSeek(
+    time
+) {
+
+    suppressJamEvents =
+        true;
+
+
+    if (
+        youtubeStoryActive &&
+        youtubePlayer &&
+        youtubeReady
+    ) {
+
+        try {
+
+            youtubePlayer.seekTo(
+                time,
+                true
+            );
+
+        } catch (
+            error
+        ) {
+
+            console.error(
+                error
+            );
+
+        }
+
+    } else if (
+        audioPlayer
+    ) {
+
+        audioPlayer.currentTime =
+            time;
+
+    }
+
+
+    setTimeout(
+        function () {
+
+            suppressJamEvents =
+                false;
+
+        },
+        300
+    );
+
 }
 
 
@@ -2280,7 +3623,9 @@ function setupSocketEvents() {
    USER COUNT
 ========================================================= */
 
-function updateUserCount(count) {
+function updateUserCount(
+    count
+) {
 
     const element =
         document.getElementById(
@@ -2288,19 +3633,27 @@ function updateUserCount(count) {
         );
 
 
-    if (!element) return;
+    if (!element) {
+
+        return;
+
+    }
 
 
     const number =
-        Number(count) || 1;
+        Math.max(
+            Number(count) || 1,
+            1
+        );
 
 
     element.textContent =
         `👥 ${number} ${
             number === 1
-            ? "listener"
-            : "listeners"
+                ? "listener"
+                : "listeners"
         }`;
+
 }
 
 
@@ -2308,16 +3661,24 @@ function updateUserCount(count) {
    REACTIONS
 ========================================================= */
 
-function sendReaction(emoji) {
+function sendReaction(
+    emoji
+) {
 
-    if (!emoji) return;
+    if (!emoji) {
+
+        return;
+
+    }
 
 
     /*
-       Local visual
+       Show locally
     */
 
-    showReaction(emoji);
+    showReaction(
+        emoji
+    );
 
 
     /*
@@ -2332,14 +3693,15 @@ function sendReaction(emoji) {
         socket.emit(
             "reaction",
             {
-                roomCode:
-                    roomCode,
 
                 emoji:
                     emoji
+
             }
         );
+
     }
+
 }
 
 
@@ -2347,7 +3709,9 @@ function sendReaction(emoji) {
    SHOW REACTION
 ========================================================= */
 
-function showReaction(emoji) {
+function showReaction(
+    emoji
+) {
 
     const container =
         document.getElementById(
@@ -2355,7 +3719,11 @@ function showReaction(emoji) {
         );
 
 
-    if (!container) return;
+    if (!container) {
+
+        return;
+
+    }
 
 
     const reaction =
@@ -2375,19 +3743,28 @@ function showReaction(emoji) {
     reaction.style.position =
         "fixed";
 
+
     reaction.style.left =
-        Math.floor(
-            Math.random() * 80 + 10
+        (
+            Math.floor(
+                Math.random() *
+                80 +
+                10
+            )
         ) + "%";
+
 
     reaction.style.bottom =
         "100px";
 
+
     reaction.style.fontSize =
         "30px";
 
+
     reaction.style.zIndex =
         "9999";
+
 
     reaction.style.pointerEvents =
         "none";
@@ -2404,8 +3781,10 @@ function showReaction(emoji) {
             reaction.style.transition =
                 "all 2s ease";
 
+
             reaction.style.transform =
                 "translateY(-250px)";
+
 
             reaction.style.opacity =
                 "0";
@@ -2423,6 +3802,7 @@ function showReaction(emoji) {
         },
         2100
     );
+
 }
 
 
@@ -2438,19 +3818,23 @@ function sendChatMessage() {
         );
 
 
-    if (!input) return;
+    if (!input) {
+
+        return;
+
+    }
 
 
     const message =
         input.value.trim();
 
 
-    if (!message) return;
+    if (!message) {
 
+        return;
 
-    /*
-       If connected to room
-    */
+    }
+
 
     if (
         socket &&
@@ -2460,28 +3844,26 @@ function sendChatMessage() {
         socket.emit(
             "chat-message",
             {
-                roomCode:
-                    roomCode,
 
                 message:
                     message
+
             }
         );
 
     } else {
 
-        /*
-           Local preview
-        */
-
         addChatMessage(
             message,
             "You"
         );
+
     }
 
 
-    input.value = "";
+    input.value =
+        "";
+
 }
 
 
@@ -2500,7 +3882,11 @@ function addChatMessage(
         );
 
 
-    if (!container) return;
+    if (!container) {
+
+        return;
+
+    }
 
 
     const item =
@@ -2537,6 +3923,7 @@ function addChatMessage(
 
     container.scrollTop =
         container.scrollHeight;
+
 }
 
 
@@ -2544,7 +3931,9 @@ function addChatMessage(
    TABS
 ========================================================= */
 
-function showTab(tab) {
+function showTab(
+    tab
+) {
 
     const chatPanel =
         document.getElementById(
@@ -2567,12 +3956,16 @@ function showTab(tab) {
         );
 
 
-    if (tab === "chat") {
+    if (
+        tab ===
+        "chat"
+    ) {
 
         if (chatPanel) {
 
             chatPanel.style.display =
                 "block";
+
         }
 
 
@@ -2580,6 +3973,7 @@ function showTab(tab) {
 
             reactionsPanel.style.display =
                 "none";
+
         }
 
 
@@ -2588,6 +3982,7 @@ function showTab(tab) {
             chatButton.classList.add(
                 "active"
             );
+
         }
 
 
@@ -2596,8 +3991,8 @@ function showTab(tab) {
             reactionButton.classList.remove(
                 "active"
             );
-        }
 
+        }
 
     } else {
 
@@ -2605,6 +4000,7 @@ function showTab(tab) {
 
             chatPanel.style.display =
                 "none";
+
         }
 
 
@@ -2612,6 +4008,7 @@ function showTab(tab) {
 
             reactionsPanel.style.display =
                 "block";
+
         }
 
 
@@ -2620,6 +4017,7 @@ function showTab(tab) {
             chatButton.classList.remove(
                 "active"
             );
+
         }
 
 
@@ -2628,8 +4026,11 @@ function showTab(tab) {
             reactionButton.classList.add(
                 "active"
             );
+
         }
+
     }
+
 }
 
 
@@ -2639,34 +4040,46 @@ function showTab(tab) {
 
 function openFullPlayer() {
 
-    if (fullPlayer) {
+    if (!fullPlayer) {
 
-        fullPlayer.classList.add(
-            "active"
-        );
+        return;
 
-        fullPlayer.style.display =
-            "flex";
     }
+
+
+    fullPlayer.classList.add(
+        "active"
+    );
+
+
+    fullPlayer.style.display =
+        "flex";
+
 }
 
 
 function closeFullPlayer() {
 
-    if (fullPlayer) {
+    if (!fullPlayer) {
 
-        fullPlayer.classList.remove(
-            "active"
-        );
+        return;
 
-        fullPlayer.style.display =
-            "none";
     }
+
+
+    fullPlayer.classList.remove(
+        "active"
+    );
+
+
+    fullPlayer.style.display =
+        "none";
+
 }
 
 
 /* =========================================================
-   CLOSE MODALS WHEN CLICKING OUTSIDE
+   CLOSE MODALS
 ========================================================= */
 
 window.addEventListener(
@@ -2695,6 +4108,7 @@ window.addEventListener(
         ) {
 
             closeCategory();
+
         }
 
 
@@ -2704,6 +4118,7 @@ window.addEventListener(
         ) {
 
             closeJamChoice();
+
         }
 
 
@@ -2713,6 +4128,7 @@ window.addEventListener(
         ) {
 
             closeModal();
+
         }
 
     }
@@ -2723,9 +4139,13 @@ window.addEventListener(
    ESCAPE HTML
 ========================================================= */
 
-function escapeHTML(value) {
+function escapeHTML(
+    value
+) {
 
-    return String(value || "")
+    return String(
+        value || ""
+    )
         .replace(
             /&/g,
             "&amp;"
@@ -2746,6 +4166,7 @@ function escapeHTML(value) {
             /'/g,
             "&#039;"
         );
+
 }
 
 
@@ -2753,13 +4174,18 @@ function escapeHTML(value) {
    ESCAPE ATTRIBUTE
 ========================================================= */
 
-function escapeAttribute(value) {
+function escapeAttribute(
+    value
+) {
 
-    return String(value || "")
+    return String(
+        value || ""
+    )
         .replace(
             /'/g,
             "\\'"
         );
+
 }
 
 
@@ -2770,10 +4196,6 @@ function escapeAttribute(value) {
 document.addEventListener(
     "keydown",
     function (event) {
-
-        /*
-           Space = play/pause
-        */
 
         if (
             event.code ===
@@ -2793,18 +4215,16 @@ document.addEventListener(
             ) {
 
                 return;
+
             }
 
 
             event.preventDefault();
 
             togglePlay();
+
         }
 
-
-        /*
-           Escape = close modals
-        */
 
         if (
             event.key ===
@@ -2818,6 +4238,7 @@ document.addEventListener(
             closeModal();
 
             closeFullPlayer();
+
         }
 
     }

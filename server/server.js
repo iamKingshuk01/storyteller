@@ -6,6 +6,10 @@ const path = require("path");
 const app = express();
 const server = http.createServer(app);
 
+/* =========================================================
+   SOCKET.IO
+========================================================= */
+
 const io = new Server(server, {
     cors: {
         origin: "https://storyteller-fawn.vercel.app",
@@ -14,25 +18,56 @@ const io = new Server(server, {
 });
 
 
-// Frontend serve করবে
+/* =========================================================
+   FRONTEND
+========================================================= */
+
 app.use(express.static(path.join(__dirname, "..")));
 
-// Room storage
+
+/* =========================================================
+   HEALTH CHECK
+========================================================= */
+
+app.get("/", (req, res) => {
+    res.json({
+        status: "online",
+        service: "SleepStory Backend"
+    });
+});
+
+
+/* =========================================================
+   ROOMS
+========================================================= */
+
 const rooms = new Map();
 
-// 6-character room code
+
+/* =========================================================
+   ROOM CODE GENERATOR
+========================================================= */
+
 function generateRoomCode() {
-    const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+    const characters =
+        "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
     let code;
 
     do {
+
         code = "";
 
         for (let i = 0; i < 6; i++) {
-            code += characters[
-                Math.floor(Math.random() * characters.length)
-            ];
+
+            code +=
+                characters[
+                    Math.floor(
+                        Math.random() *
+                        characters.length
+                    )
+                ];
         }
 
     } while (rooms.has(code));
@@ -41,268 +76,815 @@ function generateRoomCode() {
 }
 
 
-// ================= SOCKET CONNECTION =================
+/* =========================================================
+   USER COUNT
+========================================================= */
+
+function getRoomUserCount(roomCode) {
+
+    return (
+        io.sockets.adapter.rooms.get(roomCode)?.size ||
+        0
+    );
+}
+
+
+/* =========================================================
+   SOCKET CONNECTION
+========================================================= */
 
 io.on("connection", (socket) => {
 
-    console.log("👤 User connected:", socket.id);
+    console.log(
+        "👤 User connected:",
+        socket.id
+    );
 
 
-    // ================= CREATE ROOM =================
+    /* =====================================================
+       CREATE ROOM
+    ===================================================== */
 
     socket.on("create-room", (callback) => {
 
-        const roomCode = generateRoomCode();
+        const roomCode =
+            generateRoomCode();
+
 
         rooms.set(roomCode, {
+
             host: socket.id,
 
             isPlaying: false,
 
             currentTime: 0,
 
-            // কখন currentTime update হয়েছে
-            lastUpdate: Date.now()
+            lastUpdate: Date.now(),
+
+            story: null
+
         });
+
 
         socket.join(roomCode);
 
         socket.roomCode = roomCode;
+
+        socket.isHost = true;
+
+
+        /* ---------------------------------------------
+           Event notification
+        --------------------------------------------- */
 
         socket.emit("room-created", {
+
             roomCode: roomCode
+
         });
+
+
+        /* ---------------------------------------------
+           Callback response
+        --------------------------------------------- */
 
         if (typeof callback === "function") {
-    callback({
-        success: true,
-        roomCode: roomCode
-    });
-}
 
-        io.to(roomCode).emit("user-count", {
-            count:
-                io.sockets.adapter.rooms.get(roomCode)?.size || 0
-        });
+            callback({
 
-        console.log("🌙 Room created:", roomCode);
-    });
+                success: true,
 
+                roomCode: roomCode
 
-    // ================= JOIN ROOM =================
+            });
 
-    socket.on("join-room", (roomCode) => {
-
-        roomCode = roomCode.toUpperCase();
-
-        const room = rooms.get(roomCode);
-
-        if (!room) {
-
-            socket.emit(
-                "room-error",
-                "Room not found!"
-            );
-
-            return;
         }
 
 
-        // যদি room এখন playing থাকে,
-        // তাহলে last update-এর পর যত সময় গেছে
-        // সেটা currentTime-এর সাথে যোগ হবে।
+        /* ---------------------------------------------
+           User count
+        --------------------------------------------- */
 
-        let currentTime = room.currentTime;
-
-        if (room.isPlaying) {
-
-            const elapsed =
-                (Date.now() - room.lastUpdate) / 1000;
-
-            currentTime += elapsed;
-        }
-
-
-        socket.join(roomCode);
-
-        socket.roomCode = roomCode;
-
-
-        // নতুন user-কে current অবস্থার তথ্য পাঠানো
-        socket.emit("room-joined", {
-
-            roomCode: roomCode,
-
-            isPlaying: room.isPlaying,
-
-            currentTime: currentTime
-        });
-
-
-        // সবাইকে updated user count
-        io.to(roomCode).emit("user-count", {
-
-            count:
-                io.sockets.adapter.rooms.get(roomCode)?.size || 0
-        });
+        io.to(roomCode).emit(
+            "user-count",
+            getRoomUserCount(roomCode)
+        );
 
 
         console.log(
-            "👥 User joined room:",
+            "🌙 Room created:",
             roomCode
         );
+
     });
 
 
-    // ================= PLAY =================
+    /* =====================================================
+       JOIN ROOM
+    ===================================================== */
 
-    socket.on("play", (data) => {
+    socket.on(
+        "join-room",
+        (data, callback) => {
 
-        const roomCode = socket.roomCode;
-
-        if (!roomCode || !rooms.has(roomCode)) {
-            return;
-        }
-
-
-        const room = rooms.get(roomCode);
+            let code = "";
 
 
-        room.isPlaying = true;
+            /*
+               Support both:
 
-        room.currentTime = data.currentTime;
+               socket.emit("join-room", "ABC123")
 
-        room.lastUpdate = Date.now();
+               and
 
+               socket.emit(
+                   "join-room",
+                   { roomCode: "ABC123" }
+               )
+            */
 
-        socket.to(roomCode).emit(
-            "sync-play",
-            {
-                currentTime: data.currentTime
+            if (typeof data === "string") {
+
+                code =
+                    data
+                        .trim()
+                        .toUpperCase();
+
+            } else if (data && data.roomCode) {
+
+                code =
+                    data.roomCode
+                        .trim()
+                        .toUpperCase();
+
             }
-        );
-    });
 
 
-    // ================= PAUSE =================
+            /* -----------------------------------------
+               Validate code
+            ----------------------------------------- */
 
-    socket.on("pause", (data) => {
+            if (code.length !== 6) {
 
-        const roomCode = socket.roomCode;
+                const response = {
 
-        if (!roomCode || !rooms.has(roomCode)) {
-            return;
-        }
+                    success: false,
 
+                    message:
+                        "Invalid room code."
 
-        const room = rooms.get(roomCode);
-
-
-        room.isPlaying = false;
-
-        room.currentTime = data.currentTime;
-
-        room.lastUpdate = Date.now();
+                };
 
 
-        socket.to(roomCode).emit(
-            "sync-pause",
-            {
-                currentTime: data.currentTime
-            }
-        );
-    });
+                socket.emit(
+                    "room-error",
+                    response.message
+                );
 
 
-    // ================= SEEK =================
+                if (
+                    typeof callback ===
+                    "function"
+                ) {
 
-    socket.on("seek", (data) => {
+                    callback(response);
 
-        const roomCode = socket.roomCode;
-
-        if (!roomCode || !rooms.has(roomCode)) {
-            return;
-        }
-
-
-        const room = rooms.get(roomCode);
-
-
-        room.currentTime = data.currentTime;
-
-        room.lastUpdate = Date.now();
-
-
-        socket.to(roomCode).emit(
-            "sync-seek",
-            {
-                currentTime: data.currentTime
-            }
-        );
-    });
-
-
-
-        socket.on("reaction", (data) => {
-        const roomCode = socket.roomCode;
-
-        if (!roomCode || !rooms.has(roomCode)) return;
-
-        socket.to(roomCode).emit("sync-reaction", {
-            emoji: data.emoji
-        });
-    });
-
-    
-    socket.on("chat-message", (data) => {
-        const roomCode = socket.roomCode;
-
-        if (!roomCode || !rooms.has(roomCode)) return;
-
-        io.to(roomCode).emit("new-chat-message", {
-            message: data.message,
-            senderId: socket.id
-        });
-    });
-
-    // ================= DISCONNECT =================
-
-        socket.on("disconnect", () => {
-        console.log("❌ User disconnected:", socket.id);
-
-        const roomCode = socket.roomCode;
-
-        if (!roomCode) return;
-
-        const room = rooms.get(roomCode);
-
-        if (!room) return;
-
-        if (room.host === socket.id) {
-            // Host disconnect হলে সাথে সাথে room মুছে না ফেলে
-            // ৩০ সেকেন্ড wait করি (phone background/screen lock হলেও room বাঁচবে)
-            setTimeout(() => {
-                const stillExists = rooms.get(roomCode);
-
-                if (stillExists && stillExists.host === socket.id) {
-                    rooms.delete(roomCode);
-                    console.log("🗑️ Room deleted after grace period:", roomCode);
                 }
-            }, 30000);
-        } else {
-            setTimeout(() => {
-                io.to(roomCode).emit("user-count", {
-                    count: io.sockets.adapter.rooms.get(roomCode)?.size || 0
+
+                return;
+            }
+
+
+            /* -----------------------------------------
+               Find room
+            ----------------------------------------- */
+
+            const room =
+                rooms.get(code);
+
+
+            if (!room) {
+
+                const response = {
+
+                    success: false,
+
+                    message:
+                        "Room not found. Please check the code."
+
+                };
+
+
+                socket.emit(
+                    "room-error",
+                    response.message
+                );
+
+
+                if (
+                    typeof callback ===
+                    "function"
+                ) {
+
+                    callback(response);
+
+                }
+
+                return;
+            }
+
+
+            /* -----------------------------------------
+               Leave previous room if any
+            ----------------------------------------- */
+
+            if (
+                socket.roomCode &&
+                socket.roomCode !== code
+            ) {
+
+                socket.leave(
+                    socket.roomCode
+                );
+
+            }
+
+
+            /* -----------------------------------------
+               Calculate current time
+            ----------------------------------------- */
+
+            let currentTime =
+                Number(
+                    room.currentTime
+                ) || 0;
+
+
+            if (room.isPlaying) {
+
+                const elapsed =
+                    (
+                        Date.now() -
+                        room.lastUpdate
+                    ) / 1000;
+
+
+                currentTime += elapsed;
+
+            }
+
+
+            /* -----------------------------------------
+               Join socket room
+            ----------------------------------------- */
+
+            socket.join(code);
+
+            socket.roomCode = code;
+
+            socket.isHost = false;
+
+
+            /* -----------------------------------------
+               Send current room state
+            ----------------------------------------- */
+
+            socket.emit(
+                "room-joined",
+                {
+
+                    roomCode: code,
+
+                    isPlaying:
+                        room.isPlaying,
+
+                    currentTime:
+                        currentTime,
+
+                    story:
+                        room.story
+
+                }
+            );
+
+
+            /* -----------------------------------------
+               Callback
+            ----------------------------------------- */
+
+            if (
+                typeof callback ===
+                "function"
+            ) {
+
+                callback({
+
+                    success: true,
+
+                    roomCode: code,
+
+                    isPlaying:
+                        room.isPlaying,
+
+                    currentTime:
+                        currentTime,
+
+                    story:
+                        room.story
+
                 });
-            }, 100);
+
+            }
+
+
+            /* -----------------------------------------
+               Update everyone
+            ----------------------------------------- */
+
+            io.to(code).emit(
+                "user-count",
+                getRoomUserCount(code)
+            );
+
+
+            console.log(
+                "👥 User joined room:",
+                code
+            );
+
         }
-    });
+    );
+
+
+    /* =====================================================
+       STORY CHANGE
+    ===================================================== */
+
+    socket.on(
+        "story-change",
+        (data) => {
+
+            const roomCode =
+                socket.roomCode;
+
+
+            if (
+                !roomCode ||
+                !rooms.has(roomCode)
+            ) {
+
+                return;
+
+            }
+
+
+            const room =
+                rooms.get(roomCode);
+
+
+            /*
+               Only host controls the story
+            */
+
+            if (
+                room.host !== socket.id
+            ) {
+
+                return;
+
+            }
+
+
+            room.story =
+                data?.story || null;
+
+
+            room.currentTime =
+                0;
+
+
+            room.isPlaying =
+                false;
+
+
+            room.lastUpdate =
+                Date.now();
+
+
+            socket.to(roomCode).emit(
+                "sync-story",
+                {
+
+                    story:
+                        room.story,
+
+                    currentTime:
+                        0,
+
+                    isPlaying:
+                        false
+
+                }
+            );
+
+        }
+    );
+
+
+    /* =====================================================
+       PLAY
+    ===================================================== */
+
+    socket.on(
+        "play",
+        (data) => {
+
+            const roomCode =
+                socket.roomCode;
+
+
+            if (
+                !roomCode ||
+                !rooms.has(roomCode)
+            ) {
+
+                return;
+
+            }
+
+
+            const room =
+                rooms.get(roomCode);
+
+
+            const currentTime =
+                Number(
+                    data?.currentTime
+                ) || 0;
+
+
+            room.isPlaying =
+                true;
+
+
+            room.currentTime =
+                currentTime;
+
+
+            room.lastUpdate =
+                Date.now();
+
+
+            socket.to(roomCode).emit(
+                "sync-play",
+                {
+
+                    currentTime:
+                        currentTime
+
+                }
+            );
+
+        }
+    );
+
+
+    /* =====================================================
+       PAUSE
+    ===================================================== */
+
+    socket.on(
+        "pause",
+        (data) => {
+
+            const roomCode =
+                socket.roomCode;
+
+
+            if (
+                !roomCode ||
+                !rooms.has(roomCode)
+            ) {
+
+                return;
+
+            }
+
+
+            const room =
+                rooms.get(roomCode);
+
+
+            const currentTime =
+                Number(
+                    data?.currentTime
+                ) || 0;
+
+
+            room.isPlaying =
+                false;
+
+
+            room.currentTime =
+                currentTime;
+
+
+            room.lastUpdate =
+                Date.now();
+
+
+            socket.to(roomCode).emit(
+                "sync-pause",
+                {
+
+                    currentTime:
+                        currentTime
+
+                }
+            );
+
+        }
+    );
+
+
+    /* =====================================================
+       SEEK
+    ===================================================== */
+
+    socket.on(
+        "seek",
+        (data) => {
+
+            const roomCode =
+                socket.roomCode;
+
+
+            if (
+                !roomCode ||
+                !rooms.has(roomCode)
+            ) {
+
+                return;
+
+            }
+
+
+            const room =
+                rooms.get(roomCode);
+
+
+            const currentTime =
+                Number(
+                    data?.currentTime
+                ) || 0;
+
+
+            room.currentTime =
+                currentTime;
+
+
+            room.lastUpdate =
+                Date.now();
+
+
+            socket.to(roomCode).emit(
+                "sync-seek",
+                {
+
+                    currentTime:
+                        currentTime
+
+                }
+            );
+
+        }
+    );
+
+
+    /* =====================================================
+       REACTION
+    ===================================================== */
+
+    socket.on(
+        "reaction",
+        (data) => {
+
+            const roomCode =
+                socket.roomCode;
+
+
+            if (
+                !roomCode ||
+                !rooms.has(roomCode)
+            ) {
+
+                return;
+
+            }
+
+
+            const emoji =
+                data?.emoji;
+
+
+            if (!emoji) {
+
+                return;
+
+            }
+
+
+            socket.to(roomCode).emit(
+                "sync-reaction",
+                {
+
+                    emoji: emoji
+
+                }
+            );
+
+        }
+    );
+
+
+    /* =====================================================
+       CHAT
+    ===================================================== */
+
+    socket.on(
+        "chat-message",
+        (data) => {
+
+            const roomCode =
+                socket.roomCode;
+
+
+            if (
+                !roomCode ||
+                !rooms.has(roomCode)
+            ) {
+
+                return;
+
+            }
+
+
+            const message =
+                String(
+                    data?.message || ""
+                ).trim();
+
+
+            if (!message) {
+
+                return;
+
+            }
+
+
+            io.to(roomCode).emit(
+                "new-chat-message",
+                {
+
+                    message:
+                        message,
+
+                    senderId:
+                        socket.id
+
+                }
+            );
+
+        }
+    );
+
+
+    /* =====================================================
+       DISCONNECT
+    ===================================================== */
+
+    socket.on(
+        "disconnect",
+        () => {
+
+            console.log(
+                "❌ User disconnected:",
+                socket.id
+            );
+
+
+            const roomCode =
+                socket.roomCode;
+
+
+            if (!roomCode) {
+
+                return;
+
+            }
+
+
+            const room =
+                rooms.get(roomCode);
+
+
+            if (!room) {
+
+                return;
+
+            }
+
+
+            /* -----------------------------------------
+               Host disconnected
+            ----------------------------------------- */
+
+            if (
+                room.host === socket.id
+            ) {
+
+                /*
+                   Give host 30 seconds to reconnect.
+                */
+
+                setTimeout(
+                    () => {
+
+                        const currentRoom =
+                            rooms.get(roomCode);
+
+
+                        if (
+                            currentRoom &&
+                            currentRoom.host ===
+                                socket.id
+                        ) {
+
+                            rooms.delete(
+                                roomCode
+                            );
+
+
+                            console.log(
+                                "🗑️ Room deleted:",
+                                roomCode
+                            );
+
+                        }
+
+                    },
+                    30000
+                );
+
+            }
+
+
+            /* -----------------------------------------
+               Update user count
+            ----------------------------------------- */
+
+            setTimeout(
+                () => {
+
+                    if (
+                        rooms.has(roomCode)
+                    ) {
+
+                        io.to(roomCode).emit(
+                            "user-count",
+                            getRoomUserCount(
+                                roomCode
+                            )
+                        );
+
+                    }
+
+                },
+                100
+            );
+
+        }
+    );
 
 });
-// ================= START SERVER =================
 
-const PORT = process.env.PORT || 3000;
 
-server.listen(PORT, "0.0.0.0", () => {
-    console.log(`🌙 SleepStory server running on port ${PORT}`);
-});
+/* =========================================================
+   START SERVER
+========================================================= */
+
+const PORT =
+    process.env.PORT || 3000;
+
+
+server.listen(
+    PORT,
+    "0.0.0.0",
+    () => {
+
+        console.log(
+            `🌙 SleepStory server running on port ${PORT}`
+        );
+
+    }
+);
