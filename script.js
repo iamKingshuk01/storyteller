@@ -11,9 +11,7 @@
 const BACKEND_URL =
     "https://storyteller-backend-us3a.onrender.com";
 
-const JAM_PAGE =
-    "jam.html";
-
+const JAM_PAGE = "https://storyteller-fawn.vercel.app/jam.html";
 /* =========================================================
    SOCKET
 ========================================================= */
@@ -802,7 +800,7 @@ function goToJamPage(code, host) {
         url
     );
 
-alert("Opening Jam: " + url);
+
 
     window.location.href =
         url;
