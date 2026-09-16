@@ -1,1055 +1,818 @@
-// =====================================================
-// SleepStory - script.js
-// =====================================================
+const socket = io("https://storyteller-backend-us3a.onrender.com");
 
 
-// ================= CONFIG =================
+console.log("🔌 Connected to SleepStory server");
+/* =========================================
+   SLEEPSTORY - STEP 1
+   Audio Player + Basic Jam UI
+========================================= */
 
-const BACKEND_URL =
-    "https://storyteller-backend-us3a.onrender.com";
 
+// =========================================
+// STORY LIST
+// =========================================
 
-// ================= AUDIO =================
+const stories = [
+    { title: "The Last Star", src: "AUDIO/the-last-star.mp3" },
+    { title: "Moonlight Dreams", src: "AUDIO/the-last-star.mp3" },
+    { title: "The Silent Forest", src: "AUDIO/the-last-star.mp3" },
+    { title: "Ocean Whispers", src: "AUDIO/the-last-star.mp3" }
+];
 
-const audioPlayer =
-    document.getElementById("audioPlayer");
+let currentStoryIndex = 0;
 
-const playButton =
-    document.getElementById("playButton");
 
-const progressBar =
-    document.getElementById("progressBar");
+// =========================================
+// AUDIO PLAYER
+// =========================================
 
-const currentTimeDisplay =
-    document.getElementById("currentTime");
+const audio = document.getElementById("audioPlayer");
 
-const durationDisplay =
-    document.getElementById("duration");
+const playButton = document.getElementById("playButton");
 
-const volumeControl =
-    document.getElementById("volumeControl");
+const progressBar = document.getElementById("progressBar");
 
-const player =
-    document.getElementById("player");
+const currentTimeText = document.getElementById("currentTime");
 
-const playerTitle =
-    document.getElementById("playerTitle");
+const durationText = document.getElementById("duration");
 
+const playerTitle = document.getElementById("playerTitle");
 
-// ================= ROOM STATE =================
 
-let socket = null;
-
-let roomCode = null;
-
-let isHost = false;
-
-let pendingJoinRoom = false;
-
-
-// ================= SOCKET CONNECTION =================
-
-function connectSocket() {
-
-    if (socket && socket.connected) {
-        return;
-    }
-
-    socket = io(BACKEND_URL);
-
-    socket.on("connect", () => {
-
-        console.log(
-            "Connected to SleepStory server:",
-            socket.id
-        );
-
-    });
-
-
-    // ================= ROOM CREATED =================
-
-    socket.on("room-created", (data) => {
-
-        roomCode = data.roomCode;
-
-        isHost = true;
-
-        console.log(
-            "🌙 Room created:",
-            roomCode
-        );
-
-        showRoom(roomCode);
-
-    });
-
-
-    // ================= ROOM JOINED =================
-
-    socket.on("room-joined", (data) => {
-
-        roomCode = data.roomCode;
-
-        isHost = false;
-
-        console.log(
-            "👥 Joined room:",
-            roomCode
-        );
-
-
-        showRoom(roomCode);
-
-
-        // Sync current playback
-
-        if (typeof data.currentTime === "number") {
-
-            audioPlayer.currentTime =
-                data.currentTime;
-
-        }
-
-
-        // If host is already playing
-
-        if (data.isPlaying) {
-
-            audioPlayer.play()
-                .catch(() => {
-                    console.log(
-                        "Browser blocked autoplay."
-                    );
-                });
-
-        } else {
-
-            audioPlayer.pause();
-
-        }
-
-    });
-
-
-    // ================= ROOM ERROR =================
-
-    socket.on("room-error", (message) => {
-
-        alert(message);
-
-    });
-
-
-    // ================= PLAY SYNC =================
-
-    socket.on("sync-play", (data) => {
-
-        if (
-            typeof data.currentTime ===
-            "number"
-        ) {
-
-            audioPlayer.currentTime =
-                data.currentTime;
-
-        }
-
-
-        audioPlayer.play()
-            .catch(() => {});
-
-    });
-
-
-    // ================= PAUSE SYNC =================
-
-    socket.on("sync-pause", (data) => {
-
-        if (
-            typeof data.currentTime ===
-            "number"
-        ) {
-
-            audioPlayer.currentTime =
-                data.currentTime;
-
-        }
-
-
-        audioPlayer.pause();
-
-    });
-
-
-    // ================= SEEK SYNC =================
-
-    socket.on("sync-seek", (data) => {
-
-        if (
-            typeof data.currentTime ===
-            "number"
-        ) {
-
-            audioPlayer.currentTime =
-                data.currentTime;
-
-        }
-
-    });
-
-
-    // ================= USER COUNT =================
-
-    socket.on("user-count", (data) => {
-
-        const userCount =
-            document.getElementById(
-                "userCount"
-            );
-
-        if (!userCount) return;
-
-
-        const count =
-            data.count || 0;
-
-
-        userCount.innerText =
-            `👤 ${count} ${
-                count === 1
-                    ? "listener"
-                    : "listeners"
-            }`;
-
-    });
-
-
-    // ================= REACTION =================
-
-    socket.on("sync-reaction", (data) => {
-
-        if (!data || !data.emoji) {
-            return;
-        }
-
-        showReaction(data.emoji);
-
-    });
-
-
-    // ================= CHAT =================
-
-    socket.on("new-chat-message", (data) => {
-
-        console.log(
-            "💬 New message:",
-            data.message
-        );
-
-    });
-
-
-    // ================= DISCONNECT =================
-
-    socket.on("disconnect", () => {
-
-        console.log(
-            "❌ Disconnected from server"
-        );
-
-    });
-
-}
-
-
-// Connect automatically
-
-connectSocket();
-
-
-// =====================================================
-// PLAYER FUNCTIONS
-// =====================================================
-
-
-// ================= START STORY =================
-
-function playStory() {
-
-    if (!audioPlayer) return;
-
-
-    playerTitle.innerText =
-        "The Last Star";
-
-
-    if (player) {
-
-        player.classList.add(
-            "player-visible"
-        );
-
-    }
-
-
-    audioPlayer.play()
-        .then(() => {
-
-            updatePlayButton();
-
-        })
-        .catch((error) => {
-
-            console.log(
-                "Playback error:",
-                error
-            );
-
-        });
-
-}
-
-
-// ================= TOGGLE PLAY =================
+// =========================================
+// PLAY / PAUSE
+// =========================================
 
 function togglePlay() {
-
-    if (!audioPlayer) return;
-
-
-    if (audioPlayer.paused) {
-
-        audioPlayer.play()
-            .then(() => {
-
-                updatePlayButton();
-
-                sendPlay();
-
-            })
-            .catch(() => {});
-
-    } else {
-
-        audioPlayer.pause();
-
-        updatePlayButton();
-
-        sendPause();
-
-    }
-
-}
-
-
-// ================= PLAY BUTTON =================
-
-function updatePlayButton() {
-
-    if (!playButton) return;
-
-
-    if (audioPlayer.paused) {
-
-        playButton.innerText = "▶";
-
-    } else {
-
-        playButton.innerText = "Ⅱ";
-
-    }
-
-}
-
-
-// =====================================================
-// AUDIO EVENTS
-// =====================================================
-
-
-// ================= TIME UPDATE =================
-
-audioPlayer.addEventListener(
-    "timeupdate",
-    () => {
-
-        if (!audioPlayer.duration) {
-            return;
-        }
-
-
-        const percentage =
-            (audioPlayer.currentTime /
-                audioPlayer.duration) *
-            100;
-
-
-        progressBar.value =
-            percentage;
-
-
-        currentTimeDisplay.innerText =
-            formatTime(
-                audioPlayer.currentTime
-            );
-
-    }
-);
-
-
-// ================= METADATA =================
-
-audioPlayer.addEventListener(
-    "loadedmetadata",
-    () => {
-
-        durationDisplay.innerText =
-            formatTime(
-                audioPlayer.duration
-            );
-
-    }
-);
-
-
-// ================= AUDIO ENDED =================
-
-audioPlayer.addEventListener(
-    "ended",
-    () => {
-
-        updatePlayButton();
-
-        if (roomCode && isHost) {
-
-            sendPause();
-
-        }
-
-    }
-);
-
-
-// ================= PROGRESS BAR =================
-
-progressBar.addEventListener(
-    "input",
-    () => {
-
-        if (!audioPlayer.duration) {
-            return;
-        }
-
-
-        const newTime =
-            (progressBar.value / 100) *
-            audioPlayer.duration;
-
-
-        audioPlayer.currentTime =
-            newTime;
-
-    }
-);
-
-
-// Send seek after user releases slider
-
-progressBar.addEventListener(
-    "change",
-    () => {
-
-        if (!audioPlayer.duration) {
-            return;
-        }
-
-
-        const newTime =
-            (progressBar.value / 100) *
-            audioPlayer.duration;
-
-
-        audioPlayer.currentTime =
-            newTime;
-
-
-        sendSeek(newTime);
-
-    }
-);
-
-
-// ================= VOLUME =================
-
-volumeControl.addEventListener(
-    "input",
-    () => {
-
-        audioPlayer.volume =
-            volumeControl.value;
-
-    }
-);
-
-
-// =====================================================
-// ROOM SYNC
-// =====================================================
-
-
-// ================= SEND PLAY =================
-
-function sendPlay() {
-
-    if (!socket) return;
-
-    if (!roomCode) return;
-
-
-    socket.emit("play", {
-
-        currentTime:
-            audioPlayer.currentTime
-
-    });
-
-}
-
-
-// ================= SEND PAUSE =================
-
-function sendPause() {
-
-    if (!socket) return;
-
-    if (!roomCode) return;
-
-
-    socket.emit("pause", {
-
-        currentTime:
-            audioPlayer.currentTime
-
-    });
-
-}
-
-
-// ================= SEND SEEK =================
-
-function sendSeek(time) {
-
-    if (!socket) return;
-
-    if (!roomCode) return;
-
-
-    socket.emit("seek", {
-
-        currentTime: time
-
-    });
-
-}
-
-
-// =====================================================
-// JAM / ROOM FUNCTIONS
-// =====================================================
-
-
-// ================= OPEN JAM CHOICE =================
-
-function openJamChoice() {
-
-    const modal =
-        document.getElementById(
-            "jamChoiceModal"
-        );
-
-
-    if (!modal) return;
-
-
-    modal.classList.add("active");
-
-}
-
-
-// ================= CLOSE JAM CHOICE =================
-
-function closeJamChoice() {
-
-    const modal =
-        document.getElementById(
-            "jamChoiceModal"
-        );
-
-
-    if (!modal) return;
-
-
-    modal.classList.remove("active");
-
-}
-
-
-// ================= CREATE ROOM =================
-
-function createRoom() {
-
-    connectSocket();
-
-
-    if (!socket) {
-
-        alert(
-            "Unable to connect to server."
-        );
-
-        return;
-
-    }
-
-
-    if (!socket.connected) {
-
-        alert(
-            "Connecting to server... Please try again."
-        );
-
-        return;
-
-    }
-
-
-    socket.emit(
-        "create-room"
-    );
-
-}
-
-
-// ================= JOIN ROOM =================
-
-function joinRoom() {
-
-    const modal =
-        document.getElementById(
-            "roomModal"
-        );
-
-
-    const title =
-        document.getElementById(
-            "modalTitle"
-        );
-
-
-    const description =
-        document.getElementById(
-            "modalDescription"
-        );
-
-
-    const action =
-        document.getElementById(
-            "modalAction"
-        );
-
-
-    const codeInput =
-        document.getElementById(
-            "joinCode"
-        );
-
-
-    if (!modal) return;
-
-
-    title.innerText =
-        "Join a Jam";
-
-
-    description.innerText =
-        "Enter the 6-character room code shared by your friend.";
-
-
-    action.innerText =
-        "Join Room";
-
-
-    codeInput.value = "";
-
-
-    modal.classList.add("active");
-
-
-    codeInput.focus();
-
-
-    // Replace button action
-
-    action.onclick =
-        submitJoinRoom;
-
-}
-
-
-// ================= SUBMIT JOIN =================
-
-function submitJoinRoom() {
-
-    const codeInput =
-        document.getElementById(
-            "joinCode"
-        );
-
-
-    if (!codeInput) return;
-
-
-    const code =
-        codeInput.value
-            .trim()
-            .toUpperCase();
-
-
-    if (code.length !== 6) {
-
-        alert(
-            "Please enter a valid 6-character room code."
-        );
-
-        return;
-
-    }
-
-
-    connectSocket();
-
-
-    if (!socket) {
-
-        alert(
-            "Unable to connect to server."
-        );
-
-        return;
-
-    }
-
-
-    socket.emit(
-        "join-room",
-        code
-    );
-
-}
-
-
-// ================= CLOSE ROOM MODAL =================
-
-function closeRoomModal() {
-
-    const modal =
-        document.getElementById(
-            "roomModal"
-        );
-
-
-    if (!modal) return;
-
-
-    modal.classList.remove(
-        "active"
-    );
-
-}
-
-
-// ================= SHOW ROOM =================
-
-function showRoom(code) {
-
-    closeRoomModal();
-
-
-    const room =
-        document.getElementById(
-            "jamRoom"
-        );
-
-
-    const display =
-        document.getElementById(
-            "roomCodeDisplay"
-        );
-
-
-    if (display) {
-
-        display.innerText =
-            code;
-
-    }
-
-
-    if (room) {
-
-        room.classList.add(
-            "active"
-        );
-
-    }
-
-}
-
-
-// ================= COPY ROOM CODE =================
-
-function copyRoomCode() {
-
-    if (!roomCode) return;
-
-
-    navigator.clipboard
-        .writeText(roomCode)
-        .then(() => {
-
-            alert(
-                "Room code copied: " +
-                roomCode
-            );
-
-        })
-        .catch(() => {
-
-            alert(
-                "Room code: " +
-                roomCode
-            );
-
+    if (audio.paused) {
+        audio.play();
+        playButton.textContent = "❚❚";
+        updateFullPlayButton(true);
+        openFullPlayer();
+
+        socket.emit("play", {
+            currentTime: audio.currentTime
         });
 
+    } else {
+        audio.pause();
+        playButton.textContent = "▶";
+        updateFullPlayButton(false);
+
+        socket.emit("pause", {
+            currentTime: audio.currentTime
+        });
+    }
 }
 
+// RECEIVE PLAY FROM OTHER USER
+socket.on("sync-play", (data) => {
+    audio.currentTime = data.currentTime;
+    audio.play();
+    playButton.textContent = "❚❚";
+    updateFullPlayButton(true);
+});
 
-// =====================================================
-// REACTIONS
-// =====================================================
+// RECEIVE PAUSE FROM OTHER USER
+socket.on("sync-pause", (data) => {
+    audio.currentTime = data.currentTime;
+    audio.pause();
+    playButton.textContent = "▶";
+    updateFullPlayButton(false);
+});
 
-function sendReaction(emoji) {
+// =========================================
+// PLAY STORY
+// =========================================
 
-    if (!socket) return;
+function playStory(storyName) {
 
-    if (!roomCode) return;
-
-
-    socket.emit(
-        "reaction",
-        {
-            emoji: emoji
-        }
+    // খুঁজে বের করি এই story-টা list-এ কোথায় আছে
+    const foundIndex = stories.findIndex(
+        (story) => story.title === storyName
     );
 
+    if (foundIndex !== -1) {
+        currentStoryIndex = foundIndex;
+        loadCurrentStory();
+    }
 
-    showReaction(emoji);
+    audio.play();
+
+    playButton.textContent = "❚❚";
+    updateFullPlayButton(true);
+
+    openFullPlayer();
+
+}
+
+function loadCurrentStory() {
+
+    const story = stories[currentStoryIndex];
+
+    playerTitle.textContent = story.title;
+    fullPlayerTitle.textContent = story.title;
+
+    audio.src = story.src;
+
+}
+
+function nextStory() {
+
+    currentStoryIndex = (currentStoryIndex + 1) % stories.length;
+
+    loadCurrentStory();
+
+    audio.play();
+
+    playButton.textContent = "❚❚";
+    updateFullPlayButton(true);
+
+}
+
+function previousStory() {
+
+    currentStoryIndex =
+        (currentStoryIndex - 1 + stories.length) % stories.length;
+
+    loadCurrentStory();
+
+    audio.play();
+
+    playButton.textContent = "❚❚";
+    updateFullPlayButton(true);
 
 }
 
 
-function showReaction(emoji) {
+// =========================================
+// AUDIO TIME UPDATE
+// =========================================
 
-    const reaction =
-        document.createElement(
-            "div"
-        );
+audio.addEventListener("timeupdate", function () {
 
+    if (!audio.duration) return;
 
-    reaction.className =
-        "floating-reaction";
+    const percentage =
+        (audio.currentTime / audio.duration) * 100;
 
+    progressBar.value = percentage;
 
-    reaction.innerText =
-        emoji;
+    currentTimeText.textContent =
+        formatTime(audio.currentTime);
 
-
-    document.body.appendChild(
-        reaction
-    );
+});
 
 
-    setTimeout(() => {
+// =========================================
+// AUDIO LOADED
+// =========================================
 
-        reaction.remove();
+audio.addEventListener("loadedmetadata", function () {
 
-    }, 2000);
+    durationText.textContent =
+        formatTime(audio.duration);
 
-}
-
-
-// =====================================================
-// CHAT
-// =====================================================
-
-function sendChatMessage(message) {
-
-    if (!socket) return;
-
-    if (!roomCode) return;
+});
 
 
-    if (!message) return;
+// =========================================
+// AUDIO ENDED
+// =========================================
+
+audio.addEventListener("ended", function () {
+
+    playButton.textContent = "▶";
+
+    progressBar.value = 0;
+
+});
 
 
-    socket.emit(
-        "chat-message",
-        {
-            message: message
-        }
-    );
-
-}
-
-
-// =====================================================
-// HELPERS
-// =====================================================
-
-
-// ================= FORMAT TIME =================
+// =========================================
+// FORMAT TIME
+// =========================================
 
 function formatTime(seconds) {
 
-    if (
-        !seconds ||
-        isNaN(seconds)
-    ) {
-
+    if (isNaN(seconds)) {
         return "0:00";
-
     }
 
-
     const minutes =
-        Math.floor(
-            seconds / 60
-        );
-
+        Math.floor(seconds / 60);
 
     const remainingSeconds =
-        Math.floor(
-            seconds % 60
-        );
-
+        Math.floor(seconds % 60);
 
     return (
         minutes +
         ":" +
-        remainingSeconds
-            .toString()
-            .padStart(2, "0")
+        String(remainingSeconds).padStart(2, "0")
     );
 
 }
 
 
-// =====================================================
-// MODAL OUTSIDE CLICK
-// =====================================================
+// =========================================
+// CHANGE PROGRESS
+// =========================================
 
-window.addEventListener(
-    "click",
-    (event) => {
+function changeProgress() {
+    if (!audio.duration) return;
 
-        const jamModal =
-            document.getElementById(
-                "jamChoiceModal"
-            );
+    const newTime = (progressBar.value / 100) * audio.duration;
+    audio.currentTime = newTime;
 
-
-        const roomModal =
-            document.getElementById(
-                "roomModal"
-            );
+    socket.emit("seek", {
+        currentTime: audio.currentTime
+    });
+}
 
 
-        if (
-            event.target ===
-            jamModal
-        ) {
 
-            closeJamChoice();
+// =========================================
+// SKIP BACKWARD
+// =========================================
 
-        }
+function skipBackward() {
+    audio.currentTime = Math.max(0, audio.currentTime - 10);
 
-
-        if (
-            event.target ===
-            roomModal
-        ) {
-
-            closeRoomModal();
-
-        }
-
-    }
-);
+    socket.emit("seek", {
+        currentTime: audio.currentTime
+    });
+}
 
 
-// =====================================================
-// KEYBOARD
-// =====================================================
+// =========================================
+// SKIP FORWARD
+// =========================================
 
-document.addEventListener(
-    "keydown",
-    (event) => {
+function skipForward() {
+    audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
 
-        // ESC closes modal
+    socket.emit("seek", {
+        currentTime: audio.currentTime
+    });
+}
 
-        if (
-            event.key === "Escape"
-        ) {
+// =========================================
+// MUTE
+// =========================================
 
-            closeJamChoice();
+function toggleMute() {
 
-            closeRoomModal();
+    audio.muted = !audio.muted;
 
-        }
-
-
-        // Enter joins room
-
-        const codeInput =
-            document.getElementById(
-                "joinCode"
-            );
+}
 
 
-        if (
-            document.activeElement ===
-            codeInput &&
-            event.key === "Enter"
-        ) {
+// =========================================
+// SLEEP TIMER
+// =========================================
 
-            submitJoinRoom();
+let sleepTimer = null;
 
-        }
+
+function setSleepTimer() {
+
+    const select =
+        document.getElementById("sleepTimer");
+
+    const minutes =
+        Number(select.value);
+
+
+    // Cancel previous timer
+
+    if (sleepTimer) {
+
+        clearTimeout(sleepTimer);
+
+        sleepTimer = null;
 
     }
-);
 
 
-// =====================================================
-// INITIALIZATION
-// =====================================================
+    if (minutes === 0) {
 
-audioPlayer.volume = 1;
+        return;
 
-updatePlayButton();
+    }
 
-console.log(
-    "🌙 SleepStory loaded successfully"
-);
+
+    sleepTimer = setTimeout(function () {
+
+        audio.pause();
+
+        playButton.textContent = "▶";
+
+        alert("🌙 Good night! Sleep timer finished.");
+
+    }, minutes * 60 * 1000);
+
+
+    alert(
+        "🌙 Sleep timer set for " +
+        minutes +
+        " minutes."
+    );
+
+}
+
+
+// =========================================
+// SEARCH
+// =========================================
+
+function toggleSearch() {
+
+    const searchBox =
+        document.getElementById("searchBox");
+
+    if (
+        searchBox.style.display === "block"
+    ) {
+
+        searchBox.style.display = "none";
+
+    } else {
+
+        searchBox.style.display = "block";
+
+        document
+            .getElementById("searchInput")
+            .focus();
+
+    }
+
+}
+
+
+function searchStories() {
+
+    const input =
+        document
+            .getElementById("searchInput")
+            .value
+            .toLowerCase();
+
+
+    const stories =
+        document.querySelectorAll(".story-card");
+
+
+    stories.forEach(function (story) {
+
+        const title =
+            story
+                .getAttribute("data-title")
+                .toLowerCase();
+
+
+        if (title.includes(input)) {
+
+            story.style.display = "block";
+
+        } else {
+
+            story.style.display = "none";
+
+        }
+
+    });
+
+}
+
+
+// =========================================
+// MOOD
+// =========================================
+
+function selectMood(mood) {
+
+    alert(
+        "✨ " +
+        mood +
+        " stories will appear here in the next version."
+    );
+
+}
+
+
+// =========================================
+// JAM - STEP 1 UI
+// =========================================
+
+
+ function createRoom() {
+    socket.emit("create-room");
+}
+
+
+socket.on("room-created", (data) => {
+    console.log("🌙 Room created:", data.roomCode);
+
+    fullPlayerRoomInfo.textContent = "Room: " + data.roomCode;
+
+    openFullPlayer();
+
+    alert("Your Jam Room Code is: " + data.roomCode);
+});
+
+function generateRoom() {
+
+    const characters =
+        "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+
+    let code = "";
+
+
+    for (let i = 0; i < 6; i++) {
+
+        code +=
+            characters[
+                Math.floor(
+                    Math.random() *
+                    characters.length
+                )
+            ];
+
+    }
+
+
+    document.getElementById("roomCode")
+        .textContent = code;
+
+
+    document.getElementById("modalText")
+        .textContent =
+        "Share this code with your friend. Real-time sync will be connected in Step 2.";
+
+}
+
+
+// =========================================
+// JOIN ROOM
+// =========================================
+
+function joinRoom() {
+
+    const modal = document.getElementById("roomModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalText = document.getElementById("modalText");
+    const roomCode = document.getElementById("roomCode");
+    const joinCode = document.getElementById("joinCode");
+    const action = document.getElementById("modalAction");
+
+    // Open modal
+    modal.style.display = "flex";
+
+    // Change modal to Join mode
+    modalTitle.textContent = "Join a Jam";
+
+    modalText.textContent =
+        "Enter the 6-character room code shared by your friend.";
+
+    // Hide generated room code
+    roomCode.style.display = "none";
+
+    // Show input
+    joinCode.style.display = "block";
+
+    // Clear old code
+    joinCode.value = "";
+
+    // Change button
+    action.textContent = "Join Room";
+
+    // Connect when button is clicked
+    action.onclick = connectToRoom;
+}
+
+
+// =========================================
+// CONNECT TO ROOM
+// =========================================
+
+function connectToRoom() {
+
+    const joinCode = document.getElementById("joinCode");
+
+    const code = joinCode.value
+        .trim()
+        .toUpperCase();
+
+    if (code.length !== 6) {
+
+        alert("Please enter a valid 6-character room code.");
+
+        return;
+    }
+
+    console.log("🔗 Joining room:", code);
+
+    socket.emit("join-room", code);
+}
+
+
+// =========================================
+// ROOM JOINED SUCCESSFULLY
+// =========================================
+
+socket.on("room-joined", (data) => {
+    console.log("👥 Successfully joined:", data.roomCode);
+
+    // Host-এর current story position এ নিয়ে যাবে
+    audio.currentTime = data.currentTime || 0;
+
+    // Host যদি এখন Play করে থাকে
+    if (data.isPlaying) {
+        audio.play()
+            .then(() => {
+                playButton.textContent = "❚❚";
+                updateFullPlayButton(true);
+            })
+            .catch((error) => {
+                console.log("Autoplay blocked:", error);
+                playButton.textContent = "▶";
+                updateFullPlayButton(false);
+            });
+    } 
+    
+    // Host যদি Pause করে থাকে
+    else {
+        audio.pause();
+        playButton.textContent = "▶";
+        updateFullPlayButton(false);
+    }
+
+    fullPlayerRoomInfo.textContent = "Room: " + data.roomCode;
+
+    openFullPlayer();
+
+    alert("✅ Successfully joined Jam: " + data.roomCode);
+    closeModal();
+});
+
+socket.on("user-count", (data) => {
+    const userCount = document.getElementById("userCount");
+
+    if (!userCount) return;
+
+    userCount.textContent =
+        "👥 " + data.count +
+        (data.count === 1 ? " listener" : " listeners");
+});
+
+// =========================================
+// ROOM ERROR
+// =========================================
+
+socket.on("room-error", (message) => {
+
+    console.log("❌ Room error:", message);
+
+    alert("❌ " + message);
+
+});
+
+
+// =========================================
+// CLOSE MODAL
+// =========================================
+
+function closeModal() {
+
+    document.getElementById("roomModal")
+        .style.display = "none";
+
+}
+
+
+// =========================================
+// CLOSE MODAL BY CLICKING OUTSIDE
+// =========================================
+
+window.addEventListener("click", function(event) {
+
+    const modal =
+        document.getElementById("roomModal");
+
+    if (event.target === modal) {
+
+        closeModal();
+
+    }
+
+});
+// RECEIVE SEEK FROM OTHER USER
+socket.on("sync-seek", (data) => {
+    audio.currentTime = data.currentTime;
+});
+
+// LIVE USER COUNT
+socket.on("user-count", (data) => {
+    const userCount = document.getElementById("userCount");
+
+    if (!userCount) return;
+
+    if (data.count === 1) {
+        userCount.textContent = "👥 1 listener";
+    } else {
+        userCount.textContent = "👥 " + data.count + " listeners";
+    }
+});
+
+
+// =========================================
+// LIVE REACTIONS
+// =========================================
+
+function sendReaction(emoji) {
+    socket.emit("reaction", {
+        emoji: emoji
+    });
+
+    showFloatingEmoji(emoji);
+}
+
+socket.on("sync-reaction", (data) => {
+    showFloatingEmoji(data.emoji);
+});
+
+function showFloatingEmoji(emoji) {
+
+    const container = document.getElementById("reactionContainer");
+
+    if (!container) return;
+
+    const span = document.createElement("span");
+
+    span.textContent = emoji;
+    span.className = "floating-emoji";
+
+    // Random horizontal position so emojis don't overlap
+    const randomLeft = Math.random() * 80 + 10; // 10% - 90%
+    span.style.left = randomLeft + "%";
+
+    container.appendChild(span);
+
+    // Remove after animation finishes
+    setTimeout(() => {
+        span.remove();
+    }, 3000);
+
+}
+
+
+// =========================================
+// FULL PAGE PLAYER
+// =========================================
+
+const fullPlayer = document.getElementById("fullPlayer");
+const fullPlayButton = document.getElementById("fullPlayButton");
+const fullProgressBar = document.getElementById("fullProgressBar");
+const fullCurrentTimeText = document.getElementById("fullCurrentTime");
+const fullDurationText = document.getElementById("fullDuration");
+const fullPlayerTitle = document.getElementById("fullPlayerTitle");
+const fullPlayerRoomInfo = document.getElementById("fullPlayerRoomInfo");
+
+function openFullPlayer() {
+    fullPlayer.classList.add("active");
+    fullPlayerTitle.textContent = playerTitle.textContent;
+}
+
+function closeFullPlayer() {
+    fullPlayer.classList.remove("active");
+}
+
+function updateFullPlayButton(isPlaying) {
+    const symbol = isPlaying ? "❚❚" : "▶";
+    fullPlayButton.textContent = symbol;
+}
+
+function changeProgressFull() {
+    if (!audio.duration) return;
+
+    const newTime = (fullProgressBar.value / 100) * audio.duration;
+    audio.currentTime = newTime;
+
+    socket.emit("seek", {
+        currentTime: audio.currentTime
+    });
+}
+
+// Keep full player progress in sync with mini player
+audio.addEventListener("timeupdate", function () {
+    if (!audio.duration) return;
+
+    const percentage = (audio.currentTime / audio.duration) * 100;
+
+    fullProgressBar.value = percentage;
+    fullCurrentTimeText.textContent = formatTime(audio.currentTime);
+});
+
+audio.addEventListener("loadedmetadata", function () {
+    fullDurationText.textContent = formatTime(audio.duration);
+});
+
+// =========================================
+// TABS (Chat / Reactions)
+// =========================================
+
+function showTab(tab) {
+
+    const chatPanel = document.getElementById("chatPanel");
+    const reactionsPanel = document.getElementById("reactionsPanel");
+    const tabChatBtn = document.getElementById("tabChatBtn");
+    const tabReactionsBtn = document.getElementById("tabReactionsBtn");
+
+    if (tab === "chat") {
+        chatPanel.style.display = "flex";
+        reactionsPanel.style.display = "none";
+        tabChatBtn.classList.add("active");
+        tabReactionsBtn.classList.remove("active");
+    } else {
+        chatPanel.style.display = "none";
+        reactionsPanel.style.display = "flex";
+        tabChatBtn.classList.remove("active");
+        tabReactionsBtn.classList.add("active");
+    }
+
+}
+
+
+// =========================================
+// CHAT
+// =========================================
+
+function sendChatMessage() {
+
+    const chatInput = document.getElementById("chatInput");
+
+    const message = chatInput.value.trim();
+
+    if (message === "") return;
+
+    socket.emit("chat-message", {
+        message: message
+    });
+
+    chatInput.value = "";
+
+}
+
+// Allow pressing Enter to send
+document.addEventListener("DOMContentLoaded", function () {
+
+    const chatInput = document.getElementById("chatInput");
+
+    if (chatInput) {
+        chatInput.addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+                sendChatMessage();
+            }
+        });
+    }
+
+});
+
+socket.on("new-chat-message", (data) => {
+
+    const chatMessages = document.getElementById("chatMessages");
+
+    if (!chatMessages) return;
+
+    const bubble = document.createElement("div");
+
+    bubble.classList.add("chat-message");
+
+    if (data.senderId === socket.id) {
+        bubble.classList.add("own");
+    }
+
+    bubble.textContent = data.message;
+
+    chatMessages.appendChild(bubble);
+
+    // Auto-scroll to latest message
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+});
+
+
+// =========================================
+// JAM CHOICE MODAL
+// =========================================
+
+function openJamChoice() {
+    document.getElementById("jamChoiceModal")
+        .style.display = "flex";
+}
+
+function closeJamChoice() {
+    document.getElementById("jamChoiceModal")
+        .style.display = "none";
+}

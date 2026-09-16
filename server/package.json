@@ -1,14 +1,14 @@
 {
-  "name": "server",
+  "name": "storyteller-backend",
   "version": "1.0.0",
-  "description": "SleepStory realtime backend",
+  "description": "SleepStory backend - Express + Socket.IO",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^5.1.0",
-    "socket.io": "^4.8.1"
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
   }
 }
