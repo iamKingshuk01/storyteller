@@ -5,846 +5,305 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>SleepStory — Listen. Relax. Sleep.</title>
+    <title>SleepStory — Listen Together</title>
 
     <link rel="stylesheet" href="style.css">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    >
 </head>
 
 <body>
-
-    <!-- ================= REACTION CONTAINER ================= -->
-
-    <div id="reactionContainer" class="reaction-container"></div>
-
 
     <!-- ================= NAVBAR ================= -->
 
     <header class="navbar">
 
         <div class="logo">
-            <span>🌙</span>
-            SleepStory
+            🌙 SleepStory
         </div>
 
         <nav>
             <a href="#home">Home</a>
             <a href="#stories">Stories</a>
-            <a href="#stories">Categories</a>
-            <a href="#jam">Jam</a>
+            <a href="#about">About</a>
         </nav>
 
-        <button
-            class="search-btn"
-            onclick="toggleSearch()"
-        >
-            🔍
+        <button class="nav-jam-btn" onclick="openJamChoice()">
+            🎧 Listen Together
         </button>
 
     </header>
-
-
-    <!-- ================= SEARCH ================= -->
-
-    <div class="search-box" id="searchBox">
-
-        <input
-            type="text"
-            id="searchInput"
-            placeholder="Search stories..."
-            onkeyup="searchStories()"
-        >
-
-    </div>
 
 
     <!-- ================= HERO ================= -->
 
     <section class="hero" id="home">
 
-        <div class="hero-overlay"></div>
-
         <div class="hero-content">
 
-            <p class="small-title">
-                ✦ EXPLORE STORIES
+            <p class="hero-small">
+                🌙 A better way to fall asleep
             </p>
 
             <h1>
-                Stories for Every Mood
+                Listen alone.<br>
+                <span>Listen together.</span><br>
+                Drift away.
             </h1>
 
             <p class="hero-description">
-                Discover Bengali audio stories, suspense, romance,
-                horror, mystery and more — all in one place.
+                Discover calming stories, relaxing sounds and
+                peaceful journeys made for better sleep.
             </p>
-
-            <div class="story-info">
-
-                <span>🎧 Audio Stories</span>
-                <span>•</span>
-                <span>বাংলা</span>
-                <span>•</span>
-                <span>English</span>
-
-            </div>
-
 
             <div class="hero-buttons">
 
-                <button
-                    class="primary-btn"
-                    onclick="document.getElementById('stories').scrollIntoView({behavior:'smooth'})"
-                >
-                    🎧 Explore Stories
+                <button class="primary-btn" onclick="playStory()">
+                    ▶ Start Listening
                 </button>
 
-                <button
-                    class="secondary-btn"
-                    onclick="openJamChoice()"
-                >
-                    👥 Listen Together
+                <button class="outline-btn" onclick="openJamChoice()">
+                    🎧 Listen Together
                 </button>
 
             </div>
 
-        </div>
-
-
-        <div class="hero-badge">
-            <strong>🎙️</strong>
-            <span>Stories for everyone</span>
         </div>
 
     </section>
 
 
+    <!-- ================= STORIES ================= -->
 
-    <!-- ================= MAIN ================= -->
+    <section class="stories-section" id="stories">
 
-    <main>
+        <div class="section-heading">
 
+            <p>EXPLORE</p>
 
-        <!-- ================= STORY CATEGORIES ================= -->
+            <h2>
+                Stories for your
+                <span>dreams.</span>
+            </h2>
 
-        <section class="section" id="stories">
-
-            <div class="section-header">
-
-                <h2>
-                    Story Categories
-                </h2>
-
-                <span>
-                    Explore all →
-                </span>
-
-            </div>
-
-
-            <div class="story-row">
-
-
-                <!-- SUNDAY SUSPENSE -->
-
-                <article
-                    class="story-card"
-                    data-title="Sunday Suspense"
-                    onclick="openCategory('Sunday Suspense')"
-                >
-
-                    <div class="story-image">
-                        <span>🎙️</span>
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Sunday Suspense</h3>
-
-                        <p>
-                            Thriller • Mystery • Suspense
-                        </p>
-
-                    </div>
-
-                </article>
-
-
-
-                <!-- MIRCHI BANGLA -->
-
-                <article
-                    class="story-card"
-                    data-title="Mirchi Bangla"
-                    onclick="openCategory('Mirchi Bangla')"
-                >
-
-                    <div class="story-image">
-                        <span>🎧</span>
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Mirchi Bangla</h3>
-
-                        <p>
-                            Bengali • Audio Stories
-                        </p>
-
-                    </div>
-
-                </article>
-
-
-
-                <!-- LOVE -->
-
-                <article
-                    class="story-card"
-                    data-title="Love Stories"
-                    onclick="openCategory('Love Stories')"
-                >
-
-                    <div class="story-image">
-                        <span>❤️</span>
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Love Stories</h3>
-
-                        <p>
-                            Romance • Feelings
-                        </p>
-
-                    </div>
-
-                </article>
-
-
-
-                <!-- HORROR -->
-
-                <article
-                    class="story-card"
-                    data-title="Horror Stories"
-                    onclick="openCategory('Horror Stories')"
-                >
-
-                    <div class="story-image">
-                        <span>👻</span>
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Horror Stories</h3>
-
-                        <p>
-                            Ghost • Paranormal
-                        </p>
-
-                    </div>
-
-                </article>
-
-
-
-                <!-- MYSTERY -->
-
-                <article
-                    class="story-card"
-                    data-title="Mystery & Thriller"
-                    onclick="openCategory('Mystery & Thriller')"
-                >
-
-                    <div class="story-image">
-                        <span>🔍</span>
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Mystery & Thriller</h3>
-
-                        <p>
-                            Mystery • Investigation
-                        </p>
-
-                    </div>
-
-                </article>
-
-
-
-                <!-- CRIME -->
-
-                <article
-                    class="story-card"
-                    data-title="Crime Stories"
-                    onclick="openCategory('Crime Stories')"
-                >
-
-                    <div class="story-image">
-                        <span>🕵️</span>
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Crime Stories</h3>
-
-                        <p>
-                            Crime • Detective
-                        </p>
-
-                    </div>
-
-                </article>
-
-
-
-                <!-- EMOTIONAL -->
-
-                <article
-                    class="story-card"
-                    data-title="Emotional Stories"
-                    onclick="openCategory('Emotional Stories')"
-                >
-
-                    <div class="story-image">
-                        <span>💔</span>
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Emotional Stories</h3>
-
-                        <p>
-                            Drama • Life
-                        </p>
-
-                    </div>
-
-                </article>
-
-
-
-                <!-- BEDTIME -->
-
-                <article
-                    class="story-card"
-                    data-title="Bedtime Stories"
-                    onclick="openCategory('Bedtime Stories')"
-                >
-
-                    <div class="story-image">
-                        <span>🌙</span>
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Bedtime Stories</h3>
-
-                        <p>
-                            Calm • Relaxing
-                        </p>
-
-                    </div>
-
-                </article>
-
-
-
-                <!-- BENGALI -->
-
-                <article
-                    class="story-card"
-                    data-title="Bengali Stories"
-                    onclick="openCategory('Bengali Stories')"
-                >
-
-                    <div class="story-image">
-                        <span>🇧🇩</span>
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Bengali Stories</h3>
-
-                        <p>
-                            Bengali • Audio
-                        </p>
-
-                    </div>
-
-                </article>
-
-
-
-                <!-- ENGLISH -->
-
-                <article
-                    class="story-card"
-                    data-title="English Stories"
-                    onclick="openCategory('English Stories')"
-                >
-
-                    <div class="story-image">
-                        <span>🌍</span>
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>English Stories</h3>
-
-                        <p>
-                            English • Audio
-                        </p>
-
-                    </div>
-
-                </article>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- ================= USER COUNT ================= -->
-
-        <div
-            id="userCount"
-            class="user-count"
-        >
-            👥 1 listener
         </div>
 
 
+        <div class="story-grid">
 
-        <!-- ================= JAM ================= -->
 
-        <section
-            class="jam-section"
-            id="jam"
-        >
+            <!-- STORY CARD -->
 
-            <div class="jam-content">
+            <div class="story-card">
 
-                <div class="jam-icon">
-                    👥
+                <div class="story-image star-image">
+                    ✨
                 </div>
 
-                <p class="jam-label">
-                    SLEEPSTORY JAM
-                </p>
+                <div class="story-info">
 
-                <h2>
-                    Don't sleep alone.
-                    <br>
-                    <span>Listen together.</span>
-                </h2>
+                    <span class="category">
+                        Bedtime Story
+                    </span>
 
-                <p>
-                    Create a private room and listen to the same
-                    story with someone you love — even when
-                    they're miles away.
-                </p>
+                    <h3>
+                        The Last Star
+                    </h3>
 
-
-                <div class="jam-buttons">
+                    <p>
+                        A peaceful journey through the
+                        night sky.
+                    </p>
 
                     <button
-                        class="primary-btn"
-                        onclick="createRoom()"
-                    >
-                        ✨ Create a Jam
-                    </button>
+                        class="story-play"
+                        onclick="playStory()">
 
-                    <button
-                        class="outline-btn"
-                        onclick="joinRoom()"
-                    >
-                        Join with Code
+                        ▶ Play Story
+
                     </button>
 
                 </div>
 
             </div>
 
-        </section>
 
-    </main>
+            <!-- STORY CARD -->
+
+            <div class="story-card">
+
+                <div class="story-image ocean-image">
+                    🌊
+                </div>
+
+                <div class="story-info">
+
+                    <span class="category">
+                        Relaxation
+                    </span>
+
+                    <h3>
+                        Ocean Dreams
+                    </h3>
+
+                    <p>
+                        Close your eyes and listen to
+                        the sound of the ocean.
+                    </p>
+
+                    <button
+                        class="story-play"
+                        onclick="playStory()">
+
+                        ▶ Play Story
+
+                    </button>
+
+                </div>
+
+            </div>
 
 
+            <!-- STORY CARD -->
 
-    <!-- ================= AUDIO PLAYER ================= -->
+            <div class="story-card">
 
-    <div
-        class="player"
-        id="player"
-    >
+                <div class="story-image forest-image">
+                    🌲
+                </div>
 
-        <div class="player-story">
+                <div class="story-info">
 
-            <div class="mini-cover">
+                    <span class="category">
+                        Adventure
+                    </span>
+
+                    <h3>
+                        Whispering Forest
+                    </h3>
+
+                    <p>
+                        A quiet adventure deep inside
+                        an enchanted forest.
+                    </p>
+
+                    <button
+                        class="story-play"
+                        onclick="playStory()">
+
+                        ▶ Play Story
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= PLAYER ================= -->
+
+    <div class="player" id="player">
+
+        <div class="player-left">
+
+            <div class="player-cover">
                 🌙
             </div>
 
             <div>
 
-                <strong id="playerTitle">
+                <h4 id="playerTitle">
+                    The Last Star
+                </h4>
+
+                <p>
                     SleepStory
-                </strong>
-
-                <small>
-                    Choose a story to begin
-                </small>
+                </p>
 
             </div>
 
         </div>
 
 
-        <div class="full-player-controls">
-
-            <button onclick="previousStory()">
-                ⏮
-            </button>
+        <div class="player-center">
 
             <button
-                class="full-play-button"
-                id="fullPlayButton"
-                onclick="togglePlay()"
-            >
-                ▶
-            </button>
-
-            <button onclick="nextStory()">
-                ⏭
-            </button>
-
-        </div>
-
-
-        <div class="player-progress">
-
-            <span id="currentTime">
-                0:00
-            </span>
-
-            <input
-                type="range"
-                id="progressBar"
-                min="0"
-                max="100"
-                value="0"
-                oninput="changeProgress()"
-            >
-
-            <span id="duration">
-                0:00
-            </span>
-
-        </div>
-
-
-        <div class="player-extra">
-
-            <button onclick="toggleMute()">
-                🔊
-            </button>
-
-
-            <select
-                id="sleepTimer"
-                onchange="setSleepTimer()"
-            >
-
-                <option value="0">
-                    Sleep Timer
-                </option>
-
-                <option value="15">
-                    15 min
-                </option>
-
-                <option value="30">
-                    30 min
-                </option>
-
-                <option value="45">
-                    45 min
-                </option>
-
-                <option value="60">
-                    60 min
-                </option>
-
-            </select>
-
-
-            <div class="reaction-bar">
-
-                <button
-                    class="reaction-btn"
-                    onclick="sendReaction('❤️')"
-                >
-                    ❤️
-                </button>
-
-                <button
-                    class="reaction-btn"
-                    onclick="sendReaction('😂')"
-                >
-                    😂
-                </button>
-
-                <button
-                    class="reaction-btn"
-                    onclick="sendReaction('😢')"
-                >
-                    😢
-                </button>
-
-                <button
-                    class="reaction-btn"
-                    onclick="sendReaction('😴')"
-                >
-                    😴
-                </button>
-
-                <button
-                    class="reaction-btn"
-                    onclick="sendReaction('👍')"
-                >
-                    👍
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-
-    <!-- ================= FULL PAGE PLAYER ================= -->
-
-    <div
-        class="full-player"
-        id="fullPlayer"
-    >
-
-        <div class="full-player-top">
-
-            <button
-                class="full-player-close"
-                onclick="closeFullPlayer()"
-            >
-                ⌄
-            </button>
-
-            <span
-                id="fullPlayerRoomInfo"
-                class="full-player-room-info"
-            ></span>
-
-        </div>
-
-
-        <div
-            class="full-player-cover"
-            id="fullPlayerCover"
-        >
-            🌙
-        </div>
-
-
-        <div class="full-player-info">
-
-            <h2 id="fullPlayerTitle">
-                SleepStory
-            </h2>
-
-            <p>
-                Choose a story to begin
-            </p>
-
-        </div>
-
-
-        <div class="full-player-progress">
-
-            <span id="fullCurrentTime">
-                0:00
-            </span>
-
-            <input
-                type="range"
-                id="fullProgressBar"
-                min="0"
-                max="100"
-                value="0"
-                oninput="changeProgressFull()"
-            >
-
-            <span id="fullDuration">
-                0:00
-            </span>
-
-        </div>
-
-
-        <div class="player-controls">
-
-            <button onclick="previousStory()">
-                ⏮
-            </button>
-
-            <button
-                class="play-button"
+                class="player-button"
                 id="playButton"
-                onclick="togglePlay()"
-            >
+                onclick="togglePlay()">
+
                 ▶
+
             </button>
 
-            <button onclick="nextStory()">
-                ⏭
-            </button>
+            <div class="progress-container">
 
-        </div>
-
-
-        <!-- TABS -->
-
-        <div class="full-player-tabs">
-
-            <button
-                class="tab-btn active"
-                onclick="showTab('chat')"
-                id="tabChatBtn"
-            >
-                💬 Chat
-            </button>
-
-            <button
-                class="tab-btn"
-                onclick="showTab('reactions')"
-                id="tabReactionsBtn"
-            >
-                ❤️ Reactions
-            </button>
-
-        </div>
-
-
-        <!-- CHAT -->
-
-        <div
-            class="full-player-panel"
-            id="chatPanel"
-        >
-
-            <div
-                class="chat-messages"
-                id="chatMessages"
-            ></div>
-
-            <div class="chat-input-row">
+                <span id="currentTime">
+                    0:00
+                </span>
 
                 <input
-                    type="text"
-                    id="chatInput"
-                    placeholder="Type a message..."
-                >
+                    type="range"
+                    id="progressBar"
+                    min="0"
+                    max="100"
+                    value="0">
 
-                <button onclick="sendChatMessage()">
-                    ➤
-                </button>
+                <span id="duration">
+                    0:00
+                </span>
 
             </div>
 
         </div>
 
 
-        <!-- REACTIONS -->
+        <div class="player-right">
 
-        <div
-            class="full-player-panel"
-            id="reactionsPanel"
-            style="display:none;"
-        >
+            🔊
 
-            <div class="reaction-bar-full">
-
-                <button
-                    class="reaction-btn"
-                    onclick="sendReaction('❤️')"
-                >
-                    ❤️
-                </button>
-
-                <button
-                    class="reaction-btn"
-                    onclick="sendReaction('😂')"
-                >
-                    😂
-                </button>
-
-                <button
-                    class="reaction-btn"
-                    onclick="sendReaction('😢')"
-                >
-                    😢
-                </button>
-
-                <button
-                    class="reaction-btn"
-                    onclick="sendReaction('😴')"
-                >
-                    😴
-                </button>
-
-                <button
-                    class="reaction-btn"
-                    onclick="sendReaction('👍')"
-                >
-                    👍
-                </button>
-
-            </div>
+            <input
+                type="range"
+                id="volumeControl"
+                min="0"
+                max="1"
+                step="0.01"
+                value="1">
 
         </div>
 
     </div>
 
+
+    <!-- ================= AUDIO ================= -->
+
+    <audio
+        id="audioPlayer"
+        src="AUDIO/the-last-star.mp3">
+    </audio>
 
 
     <!-- ================= JAM CHOICE MODAL ================= -->
 
     <div
         class="modal"
-        id="jamChoiceModal"
-    >
+        id="jamChoiceModal">
 
-        <div class="modal-content">
+        <div class="modal-box">
 
             <button
                 class="close-btn"
-                onclick="closeJamChoice()"
-            >
-                ✕
+                onclick="closeJamChoice()">
+
+                ×
+
             </button>
 
             <div class="modal-icon">
-                👥
+                🎧
             </div>
 
             <h2>
@@ -852,71 +311,60 @@
             </h2>
 
             <p>
-                Start a new Jam room, or join one
-                your friend already created.
+                Listen to the same story with your
+                friends, even when you're far away.
             </p>
 
 
-            <div class="jam-choice-buttons">
+            <button
+                class="primary-btn modal-btn"
+                onclick="closeJamChoice(); createRoom();">
 
-                <button
-                    class="primary-btn"
-                    onclick="closeJamChoice(); createRoom();"
-                >
-                    ✨ Create a Jam
-                </button>
+                ✨ Create a Jam
 
-                <button
-                    class="outline-btn"
-                    onclick="closeJamChoice(); joinRoom();"
-                >
-                    Join with Code
-                </button>
+            </button>
 
-            </div>
+
+            <button
+                class="outline-btn modal-btn"
+                onclick="closeJamChoice(); joinRoom();">
+
+                🔗 Join with Code
+
+            </button>
 
         </div>
 
     </div>
 
 
-
     <!-- ================= ROOM MODAL ================= -->
 
     <div
         class="modal"
-        id="roomModal"
-    >
+        id="roomModal">
 
-        <div class="modal-content">
+        <div class="modal-box">
 
             <button
                 class="close-btn"
-                onclick="closeModal()"
-            >
-                ✕
+                onclick="closeRoomModal()">
+
+                ×
+
             </button>
 
             <div class="modal-icon">
-                👥
+                🌙
             </div>
 
             <h2 id="modalTitle">
                 Create a Jam
             </h2>
 
-            <p id="modalText">
-                Create a room and invite someone
-                to listen together.
+            <p id="modalDescription">
+                Create a room and invite your friends.
             </p>
-
-
-            <div
-                class="room-code"
-                id="roomCode"
-            >
-                ------
-            </div>
 
 
             <input
@@ -924,100 +372,96 @@
                 id="joinCode"
                 maxlength="6"
                 placeholder="Enter 6-digit code"
-            >
+                autocomplete="off">
 
 
             <button
                 class="primary-btn modal-btn"
                 id="modalAction"
-                onclick="joinRoom()"
-            >
+                onclick="joinRoom()">
+
                 Create Room
-            </button>
 
-        </div>
-
-    </div>
-
-
-
-    <!-- ================= CATEGORY MODAL ================= -->
-
-    <div
-        id="categoryModal"
-        class="category-modal"
-    >
-
-        <div class="category-modal-content">
-
-            <button
-                class="category-close-btn"
-                onclick="closeCategory()"
-            >
-                ✕
             </button>
 
 
-            <p class="category-small-title">
-                ✦ STORY COLLECTION
+            <p
+                class="room-status"
+                id="roomStatus">
             </p>
 
-
-            <h2 id="categoryTitle">
-                Stories
-            </h2>
-
-
-            <div
-                id="storyLibrary"
-                class="story-library"
-            >
-            </div>
-
         </div>
 
     </div>
 
 
+    <!-- ================= JAM ROOM INFO ================= -->
 
-    <!-- ================= AUDIO ================= -->
+    <div
+        class="jam-room"
+        id="jamRoom">
 
-    <audio
-        id="audioPlayer"
-        src="AUDIO/the-last-star.mp3"
-    ></audio>
+        <div class="jam-room-content">
 
-<div id="youtubePlayerContainer" class="youtube-player-container">
-    <div id="youtubePlayer"></div>
-</div>
+            <span>
+                🎧 Listening Together
+            </span>
+
+            <strong id="roomCodeDisplay">
+                ------
+            </strong>
+
+            <small>
+                Share this code with your friends
+            </small>
+
+            <button
+                onclick="copyRoomCode()">
+
+                📋 Copy Code
+
+            </button>
+
+            <span id="userCount">
+                👤 1 listener
+            </span>
+
+        </div>
+
+    </div>
+
 
     <!-- ================= FOOTER ================= -->
 
-    <footer>
+    <footer id="about">
 
-        <div class="logo">
+        <div class="footer-logo">
             🌙 SleepStory
         </div>
 
         <p>
-            Listen alone. Listen together. Drift away.
+            Stories that bring people closer,
+            even from far away.
         </p>
 
         <p class="copyright">
-            © 2026 SleepStory
+            © 2026 SleepStory. Made with ❤️
         </p>
 
     </footer>
 
 
+    <!-- ================= SOCKET.IO ================= -->
 
-   <!-- ================= SCRIPTS ================= -->
+    <script src="https://storyteller-backend-us3a.onrender.com/socket.io/socket.io.js">
+    </script>
 
-<script src="https://www.youtube.com/iframe_api"></script>
 
-<script src="https://storyteller-backend-us3a.onrender.com/socket.io/socket.io.js"></script>
+    <!-- ================= JAVASCRIPT ================= -->
 
-<script src="script.js?v=4"></script>
+    <script src="script.js?v=2">
+    </script>
 
 </body>
+
 </html>

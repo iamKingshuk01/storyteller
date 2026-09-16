@@ -1,43 +1,45 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
 
+
+// =====================================================
+// SOCKET.IO
+// =====================================================
+
 const io = new Server(server, {
     cors: {
-        origin: [
-            "https://storyteller-fawn.vercel.app",
-            "http://localhost:3000"
-        ],
+        origin: "https://storyteller-fawn.vercel.app",
         methods: ["GET", "POST"]
     }
 });
 
 
-// =========================================================
-// BASIC
-// =========================================================
+// =====================================================
+// SERVE FRONTEND
+// =====================================================
 
-app.get("/health", (req, res) => {
-    res.json({
-        status: "ok",
-        service: "SleepStory Backend"
-    });
-});
+app.use(
+    express.static(
+        path.join(__dirname, "..")
+    )
+);
 
 
-// =========================================================
-// ROOM STORAGE
-// =========================================================
+// =====================================================
+// ROOMS
+// =====================================================
 
 const rooms = new Map();
 
 
-// =========================================================
-// ROOM CODE
-// =========================================================
+// =====================================================
+// ROOM CODE GENERATOR
+// =====================================================
 
 function generateRoomCode() {
 
@@ -52,13 +54,12 @@ function generateRoomCode() {
 
         for (let i = 0; i < 6; i++) {
 
-            code +=
-                characters[
-                    Math.floor(
-                        Math.random() *
-                        characters.length
-                    )
-                ];
+            code += characters[
+                Math.floor(
+                    Math.random() *
+                    characters.length
+                )
+            ];
 
         }
 
@@ -68,35 +69,9 @@ function generateRoomCode() {
 }
 
 
-// =========================================================
-// GET ROOM
-// =========================================================
-
-function getRoomCount(roomCode) {
-
-    return (
-        io.sockets.adapter.rooms.get(roomCode)?.size ||
-        0
-    );
-
-}
-
-
-function emitUserCount(roomCode) {
-
-    io.to(roomCode).emit(
-        "user-count",
-        {
-            count: getRoomCount(roomCode)
-        }
-    );
-
-}
-
-
-// =========================================================
+// =====================================================
 // SOCKET CONNECTION
-// =========================================================
+// =====================================================
 
 io.on("connection", (socket) => {
 
@@ -106,9 +81,9 @@ io.on("connection", (socket) => {
     );
 
 
-    // =====================================================
+    // =================================================
     // CREATE ROOM
-    // =====================================================
+    // =================================================
 
     socket.on(
         "create-room",
@@ -121,30 +96,13 @@ io.on("connection", (socket) => {
             rooms.set(
                 roomCode,
                 {
-
                     host: socket.id,
-
-                    hostConnected: true,
 
                     isPlaying: false,
 
                     currentTime: 0,
 
-                    lastUpdate: Date.now(),
-
-                    currentStory: {
-
-                        title: "The Last Star",
-
-                        category: "Bedtime Stories",
-
-                        type: "local",
-
-                        src:
-                            "AUDIO/the-last-star.mp3"
-
-                    }
-
+                    lastUpdate: Date.now()
                 }
             );
 
@@ -154,8 +112,16 @@ io.on("connection", (socket) => {
             socket.roomCode =
                 roomCode;
 
-            socket.isRoomHost =
-                true;
+
+            socket.emit(
+                "room-created",
+                {
+                    roomCode: roomCode
+                }
+            );
+
+
+            sendUserCount(roomCode);
 
 
             console.log(
@@ -163,90 +129,22 @@ io.on("connection", (socket) => {
                 roomCode
             );
 
-
-            socket.emit(
-                "room-created",
-                {
-                    roomCode
-                }
-            );
-
-
-            emitUserCount(
-                roomCode
-            );
-
         }
     );
 
 
-    // =====================================================
+    // =================================================
     // JOIN ROOM
-    // =====================================================
+    // =================================================
 
     socket.on(
         "join-room",
-        (payload) => {
+        (roomCode) => {
 
-            let roomCode = "";
-
-            let hostRequest = false;
-
-
-            /*
-             Supports BOTH:
-
-             socket.emit("join-room", "ABC123")
-
-             and
-
-             socket.emit("join-room", {
-                 roomCode: "ABC123",
-                 host: true
-             })
-            */
-
-            if (
-                typeof payload === "string"
-            ) {
-
-                roomCode =
-                    payload
-                        .trim()
-                        .toUpperCase();
-
-            } else if (
-                payload &&
-                typeof payload === "object"
-            ) {
-
-                roomCode =
-                    String(
-                        payload.roomCode ||
-                        payload.code ||
-                        ""
-                    )
-                        .trim()
-                        .toUpperCase();
-
-                hostRequest =
-                    payload.host === true;
-
-            }
-
-
-            if (
-                roomCode.length !== 6
-            ) {
-
-                socket.emit(
-                    "room-error",
-                    "Invalid Jam room."
-                );
-
-                return;
-
-            }
+            roomCode =
+                String(roomCode)
+                    .trim()
+                    .toUpperCase();
 
 
             const room =
@@ -255,36 +153,24 @@ io.on("connection", (socket) => {
 
             if (!room) {
 
-                console.log(
-                    "❌ Room not found:",
-                    roomCode
-                );
-
-
                 socket.emit(
                     "room-error",
                     "Room not found!"
                 );
 
                 return;
-
             }
 
 
-            /*
-             Calculate current playback
-             position if the room is playing.
-            */
+            // -----------------------------------------
+            // Calculate latest playback position
+            // -----------------------------------------
 
             let currentTime =
-                Number(
-                    room.currentTime
-                ) || 0;
+                room.currentTime;
 
 
-            if (
-                room.isPlaying
-            ) {
+            if (room.isPlaying) {
 
                 const elapsed =
                     (
@@ -293,11 +179,14 @@ io.on("connection", (socket) => {
                     ) / 1000;
 
 
-                currentTime +=
-                    elapsed;
+                currentTime += elapsed;
 
             }
 
+
+            // -----------------------------------------
+            // Join socket room
+            // -----------------------------------------
 
             socket.join(roomCode);
 
@@ -305,143 +194,39 @@ io.on("connection", (socket) => {
                 roomCode;
 
 
-            /*
-             If the original host opens
-             jam.html again, transfer host
-             ownership to the new socket.
-            */
-
-            if (
-                hostRequest
-            ) {
-
-                room.host =
-                    socket.id;
-
-                room.hostConnected =
-                    true;
-
-                socket.isRoomHost =
-                    true;
-
-                console.log(
-                    "👑 Host transferred:",
-                    roomCode,
-                    socket.id
-                );
-
-            }
-
+            // -----------------------------------------
+            // Send current room state
+            // -----------------------------------------
 
             socket.emit(
                 "room-joined",
                 {
-
-                    roomCode,
+                    roomCode: roomCode,
 
                     isPlaying:
                         room.isPlaying,
 
-                    currentTime,
-
-                    currentStory:
-                        room.currentStory
-
+                    currentTime:
+                        currentTime
                 }
             );
 
 
-            emitUserCount(
+            sendUserCount(roomCode);
+
+
+            console.log(
+                "👥 User joined room:",
                 roomCode
             );
 
-
-            console.log(
-                "👥 User joined:",
-                roomCode,
-                socket.id
-            );
-
         }
     );
 
 
-    // =====================================================
-    // STORY CHANGE
-    // =====================================================
-
-    socket.on(
-        "story-change",
-        (data) => {
-
-            const roomCode =
-                socket.roomCode;
-
-
-            if (
-                !roomCode ||
-                !rooms.has(roomCode)
-            ) {
-
-                return;
-
-            }
-
-
-            const room =
-                rooms.get(roomCode);
-
-
-            if (
-                !data ||
-                !data.story
-            ) {
-
-                return;
-
-            }
-
-
-            room.currentStory =
-                data.story;
-
-
-            room.currentTime = 0;
-
-            room.isPlaying = false;
-
-            room.lastUpdate =
-                Date.now();
-
-
-            socket.to(roomCode).emit(
-                "sync-story",
-                {
-
-                    story:
-                        data.story,
-
-                    currentTime: 0,
-
-                    isPlaying: false
-
-                }
-            );
-
-
-            console.log(
-                "📖 Story changed:",
-                roomCode,
-                data.story.title
-            );
-
-        }
-    );
-
-
-    // =====================================================
+    // =================================================
     // PLAY
-    // =====================================================
+    // =================================================
 
     socket.on(
         "play",
@@ -455,9 +240,7 @@ io.on("connection", (socket) => {
                 !roomCode ||
                 !rooms.has(roomCode)
             ) {
-
                 return;
-
             }
 
 
@@ -471,30 +254,32 @@ io.on("connection", (socket) => {
                 ) || 0;
 
 
+            room.isPlaying = true;
+
             room.currentTime =
                 currentTime;
-
-            room.isPlaying =
-                true;
 
             room.lastUpdate =
                 Date.now();
 
 
-            socket.to(roomCode).emit(
-                "sync-play",
-                {
-                    currentTime
-                }
-            );
+            socket
+                .to(roomCode)
+                .emit(
+                    "sync-play",
+                    {
+                        currentTime:
+                            currentTime
+                    }
+                );
 
         }
     );
 
 
-    // =====================================================
+    // =================================================
     // PAUSE
-    // =====================================================
+    // =================================================
 
     socket.on(
         "pause",
@@ -508,9 +293,7 @@ io.on("connection", (socket) => {
                 !roomCode ||
                 !rooms.has(roomCode)
             ) {
-
                 return;
-
             }
 
 
@@ -524,30 +307,32 @@ io.on("connection", (socket) => {
                 ) || 0;
 
 
+            room.isPlaying = false;
+
             room.currentTime =
                 currentTime;
-
-            room.isPlaying =
-                false;
 
             room.lastUpdate =
                 Date.now();
 
 
-            socket.to(roomCode).emit(
-                "sync-pause",
-                {
-                    currentTime
-                }
-            );
+            socket
+                .to(roomCode)
+                .emit(
+                    "sync-pause",
+                    {
+                        currentTime:
+                            currentTime
+                    }
+                );
 
         }
     );
 
 
-    // =====================================================
+    // =================================================
     // SEEK
-    // =====================================================
+    // =================================================
 
     socket.on(
         "seek",
@@ -561,9 +346,7 @@ io.on("connection", (socket) => {
                 !roomCode ||
                 !rooms.has(roomCode)
             ) {
-
                 return;
-
             }
 
 
@@ -584,20 +367,23 @@ io.on("connection", (socket) => {
                 Date.now();
 
 
-            socket.to(roomCode).emit(
-                "sync-seek",
-                {
-                    currentTime
-                }
-            );
+            socket
+                .to(roomCode)
+                .emit(
+                    "sync-seek",
+                    {
+                        currentTime:
+                            currentTime
+                    }
+                );
 
         }
     );
 
 
-    // =====================================================
+    // =================================================
     // REACTION
-    // =====================================================
+    // =================================================
 
     socket.on(
         "reaction",
@@ -611,27 +397,35 @@ io.on("connection", (socket) => {
                 !roomCode ||
                 !rooms.has(roomCode)
             ) {
-
                 return;
-
             }
 
 
-            socket.to(roomCode).emit(
-                "sync-reaction",
-                {
-                    emoji:
-                        data?.emoji || "❤️"
-                }
-            );
+            if (
+                !data ||
+                !data.emoji
+            ) {
+                return;
+            }
+
+
+            socket
+                .to(roomCode)
+                .emit(
+                    "sync-reaction",
+                    {
+                        emoji:
+                            data.emoji
+                    }
+                );
 
         }
     );
 
 
-    // =====================================================
-    // CHAT
-    // =====================================================
+    // =================================================
+    // CHAT MESSAGE
+    // =================================================
 
     socket.on(
         "chat-message",
@@ -645,44 +439,43 @@ io.on("connection", (socket) => {
                 !roomCode ||
                 !rooms.has(roomCode)
             ) {
-
                 return;
-
             }
 
 
-            const message =
-                String(
-                    data?.message || ""
-                ).trim();
-
-
-            if (!message) {
-
+            if (
+                !data ||
+                !data.message
+            ) {
                 return;
-
             }
 
 
-            io.to(roomCode).emit(
-                "new-chat-message",
-                {
+            io
+                .to(roomCode)
+                .emit(
+                    "new-chat-message",
+                    {
+                        message:
+                            String(
+                                data.message
+                            ).slice(
+                                0,
+                                500
+                            ),
 
-                    message,
-
-                    senderId:
-                        socket.id
-
-                }
-            );
+                        senderId:
+                            socket.id
+                    }
+                );
 
         }
     );
 
 
-    // =====================================================
+    // =================================================
     // DISCONNECT
-    // =====================================================
+    // =================================================
 
     socket.on(
         "disconnect",
@@ -699,9 +492,7 @@ io.on("connection", (socket) => {
 
 
             if (!roomCode) {
-
                 return;
-
             }
 
 
@@ -710,63 +501,38 @@ io.on("connection", (socket) => {
 
 
             if (!room) {
-
                 return;
-
             }
 
 
-            /*
-             IMPORTANT:
-
-             Do NOT immediately delete the room.
-
-             Host leaves index.html and opens
-             jam.html, which creates a NEW socket.
-
-             Give the host enough time to reconnect.
-            */
+            // -----------------------------------------
+            // Host disconnected
+            // -----------------------------------------
 
             if (
-                room.host === socket.id
+                room.host ===
+                socket.id
             ) {
 
-                room.hostConnected =
-                    false;
-
-
-                console.log(
-                    "⏳ Host temporarily disconnected:",
-                    roomCode
-                );
-
+                /*
+                 * Keep the room alive for 30 seconds.
+                 * This prevents accidental deletion
+                 * during temporary disconnection.
+                 */
 
                 setTimeout(
                     () => {
 
-                        const currentRoom =
-                            rooms.get(roomCode);
+                        const stillExists =
+                            rooms.get(
+                                roomCode
+                            );
 
-
-                        if (!currentRoom) {
-
-                            return;
-
-                        }
-
-
-                        /*
-                         If the same host has not
-                         returned, keep the room
-                         alive for now.
-
-                         The room is only removed
-                         when there are no sockets
-                         left.
-                        */
 
                         if (
-                            getRoomCount(roomCode) === 0
+                            stillExists &&
+                            stillExists.host ===
+                            socket.id
                         ) {
 
                             rooms.delete(
@@ -775,31 +541,29 @@ io.on("connection", (socket) => {
 
 
                             console.log(
-                                "🗑️ Empty room deleted:",
+                                "🗑️ Room deleted:",
                                 roomCode
                             );
 
                         }
 
                     },
-                    120000
+                    30000
                 );
 
             }
 
 
+            // -----------------------------------------
+            // Update user count
+            // -----------------------------------------
+
             setTimeout(
                 () => {
 
-                    if (
-                        rooms.has(roomCode)
-                    ) {
-
-                        emitUserCount(
-                            roomCode
-                        );
-
-                    }
+                    sendUserCount(
+                        roomCode
+                    );
 
                 },
                 100
@@ -811,9 +575,63 @@ io.on("connection", (socket) => {
 });
 
 
-// =========================================================
-// START SERVER
-// =========================================================
+// =====================================================
+// USER COUNT
+// =====================================================
+
+function sendUserCount(roomCode) {
+
+    const room =
+        io.sockets.adapter
+            .rooms
+            .get(roomCode);
+
+
+    const count =
+        room
+            ? room.size
+            : 0;
+
+
+    io
+        .to(roomCode)
+        .emit(
+            "user-count",
+            {
+                count: count
+            }
+        );
+
+}
+
+
+// =====================================================
+// HEALTH CHECK
+// =====================================================
+
+app.get(
+    "/health",
+    (req, res) => {
+
+        res.json(
+            {
+                status: "ok",
+
+                service:
+                    "SleepStory Backend",
+
+                rooms:
+                    rooms.size
+            }
+        );
+
+    }
+);
+
+
+// =====================================================
+// SERVER
+// =====================================================
 
 const PORT =
     process.env.PORT || 3000;
