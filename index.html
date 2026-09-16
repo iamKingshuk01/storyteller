@@ -12,9 +12,11 @@
     <!-- Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-</head>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+</head>
 <body>
 
     <div id="reactionContainer" class="reaction-container"></div>
@@ -64,17 +66,17 @@
 
         <div class="hero-content">
 
-            <p class="small-title">
+                        <p class="small-title">
                 ✦ TONIGHT'S FEATURED STORY
             </p>
 
-            <h1>The Last Star</h1>
+            <h1>Love Story</h1>
 
             <p class="hero-description">
 
-                A peaceful journey through a quiet universe,
-                where one little star discovers the meaning
-                of home.
+                A heartfelt tale of two souls finding each
+                other against all odds — a gentle, romantic
+                listen for a quiet evening.
 
             </p>
 
@@ -82,9 +84,9 @@
 
                 <span>2026</span>
                 <span>•</span>
-                <span>32 min</span>
+                <span>28 min</span>
                 <span>•</span>
-                <span>Sleep</span>
+                <span>Romance</span>
 
             </div>
 
@@ -92,7 +94,7 @@
 
                 <button
                     class="primary-btn"
-                    onclick="playStory('The Last Star')"
+                    onclick="playStory('Love Story')"
                 >
                     ▶ Play Story
                 </button>
@@ -134,20 +136,21 @@
             </div>
 
 
-            <div class="story-row">
+                       <div class="story-row" id="storyRow">
 
 
                 <!-- STORY CARD -->
 
                 <article
                     class="story-card"
-                    data-title="The Last Star"
+                    data-title="Sleepy Night"
+                    data-category="Sleep"
                 >
 
                     <div class="story-image star-image">
 
                         <span class="play-overlay"
-                              onclick="playStory('The Last Star')">
+                              onclick="playStory('Sleepy Night')">
                             ▶
                         </span>
 
@@ -155,9 +158,9 @@
 
                     <div class="story-details">
 
-                        <h3>The Last Star</h3>
+                        <h3>Sleepy Night</h3>
 
-                        <p>32 min • Calm</p>
+                        <p>32 min • Sleep</p>
 
                         <div class="progress">
 
@@ -171,12 +174,12 @@
 
                 </article>
 
-
                 <!-- STORY CARD -->
 
-                <article
+                              <article
                     class="story-card story-card-light"
                     data-title="Moonlight Dreams"
+                    data-category="Relax"
                 >
 
                     <div class="story-image moon-image">
@@ -192,7 +195,7 @@
 
                         <h3>Moonlight Dreams</h3>
 
-                        <p>24 min • Relaxing</p>
+                        <p>24 min • Relax</p>
 
                         <div class="progress">
 
@@ -209,9 +212,10 @@
 
                 <!-- STORY CARD -->
 
-                <article
+                               <article
                     class="story-card"
                     data-title="The Silent Forest"
+                    data-category="Mystery"
                 >
 
                     <div class="story-image forest-image">
@@ -241,12 +245,12 @@
 
                 </article>
 
-
                 <!-- STORY CARD -->
 
-                <article
+                               <article
                     class="story-card story-card-light"
                     data-title="Ocean Whispers"
+                    data-category="Adventure"
                 >
 
                     <div class="story-image ocean-image">
@@ -262,7 +266,7 @@
 
                         <h3>Ocean Whispers</h3>
 
-                        <p>28 min • Sleep</p>
+                        <p>28 min • Adventure</p>
 
                         <div class="progress">
 
@@ -275,6 +279,153 @@
                     </div>
 
                 </article>
+
+                <!-- STORY CARD -->
+
+                <article
+                    class="story-card"
+                    data-title="Sunday Suspense"
+                    data-category="Suspense"
+                >
+
+                    <div class="story-image star-image">
+
+                        <span class="play-overlay"
+                              onclick="playStory('Sunday Suspense')">
+                            ▶
+                        </span>
+
+                    </div>
+
+                    <div class="story-details">
+
+                        <h3>Sunday Suspense</h3>
+
+                        <p>35 min • Suspense</p>
+
+                        <div class="progress">
+
+                            <div class="progress-fill"
+                                 style="width: 0%;">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+
+                <!-- STORY CARD -->
+
+                <article
+                    class="story-card story-card-light"
+                    data-title="Mirchi Bangla"
+                    data-category="Mirchi Bangla"
+                >
+
+                    <div class="story-image moon-image">
+
+                        <span class="play-overlay"
+                              onclick="playStory('Mirchi Bangla')">
+                            ▶
+                        </span>
+
+                    </div>
+
+                    <div class="story-details">
+
+                        <h3>Mirchi Bangla</h3>
+
+                        <p>30 min • Mirchi Bangla</p>
+
+                        <div class="progress">
+
+                            <div class="progress-fill"
+                                 style="width: 0%;">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+
+                <!-- STORY CARD -->
+
+                <article
+                    class="story-card"
+                    data-title="Love Story"
+                    data-category="Love Story"
+                >
+
+                    <div class="story-image forest-image">
+
+                        <span class="play-overlay"
+                              onclick="playStory('Love Story')">
+                            ▶
+                        </span>
+
+                    </div>
+
+                    <div class="story-details">
+
+                        <h3>Love Story</h3>
+
+                        <p>28 min • Romance</p>
+
+                        <div class="progress">
+
+                            <div class="progress-fill"
+                                 style="width: 0%;">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+
+                <!-- STORY CARD -->
+
+                <article
+                    class="story-card story-card-light"
+                    data-title="Horror Story"
+                    data-category="Horror Story"
+                >
+
+                    <div class="story-image ocean-image">
+
+                        <span class="play-overlay"
+                              onclick="playStory('Horror Story')">
+                            ▶
+                        </span>
+
+                    </div>
+
+                    <div class="story-details">
+
+                        <h3>Horror Story</h3>
+
+                        <p>40 min • Horror</p>
+
+                        <div class="progress">
+
+                            <div class="progress-fill"
+                                 style="width: 0%;">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+
+
+
 
             </div>
 
@@ -293,31 +444,51 @@
             </div>
 
 
-            <div class="mood-grid">
+                        <div class="mood-grid">
 
-                <button onclick="selectMood('Sleep')">
+                <button onclick="filterMood('Sleep')">
                     😴
                     <span>Sleep</span>
                 </button>
 
-                <button onclick="selectMood('Relax')">
+                <button onclick="filterMood('Relax')">
                     🌙
                     <span>Relax</span>
                 </button>
 
-                <button onclick="selectMood('Romance')">
+                <button onclick="filterMood('Romance')">
                     ❤️
                     <span>Romance</span>
                 </button>
 
-                <button onclick="selectMood('Mystery')">
+                <button onclick="filterMood('Mystery')">
                     🕯️
                     <span>Mystery</span>
                 </button>
 
-                <button onclick="selectMood('Adventure')">
+                <button onclick="filterMood('Adventure')">
                     🏔️
                     <span>Adventure</span>
+                </button>
+
+                <button onclick="filterMood('Suspense')">
+                    🔪
+                    <span>Suspense</span>
+                </button>
+
+                <button onclick="filterMood('Mirchi Bangla')">
+                    🌶️
+                    <span>Mirchi Bangla</span>
+                </button>
+
+                <button onclick="filterMood('Love Story')">
+                    💕
+                    <span>Love Story</span>
+                </button>
+
+                <button onclick="filterMood('Horror Story')">
+                    👻
+                    <span>Horror Story</span>
                 </button>
 
             </div>
@@ -506,8 +677,12 @@
 
         </div>
 
-        <div class="full-player-cover" id="fullPlayerCover">
-            🌙
+                <div class="full-player-cover" id="fullPlayerCover">
+
+            <div id="youtubePlayerBox">
+                <div id="youtubePlayer"></div>
+            </div>
+
         </div>
 
         <div class="full-player-info">

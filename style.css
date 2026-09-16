@@ -1856,3 +1856,32 @@ footer .copyright {
 .reaction-bar-full .reaction-btn {
     font-size: 34px;
 }
+
+
+
+/* =========================================
+   YOUTUBE PLAYER (small, compliant embed)
+========================================= */
+
+#youtubePlayerBox {
+    width: 100%;
+    height: 100%;
+
+    border-radius: 16px;
+
+    overflow: hidden;
+
+    position: relative;
+}
+
+#youtubePlayer {
+    width: 100%;
+    height: 100%;
+}
+
+#youtubePlayer iframe {
+    width: 100%;
+    height: 100%;
+
+    border-radius: 16px;
+}
