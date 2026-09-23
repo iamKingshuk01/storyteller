@@ -1,763 +1,652 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>SleepStory — Listen. Relax. Sleep.</title>
-
-    <link rel="stylesheet" href="style.css">
-
-    <!-- Google Font -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- YouTube IFrame API -->
-    <script src="https://www.youtube.com/iframe_api"></script>
-</head>
-<body>
-
-    <div id="reactionContainer" class="reaction-container"></div>
-
-    <!-- ================= NAVBAR ================= -->
-
-    <header class="navbar">
-
-        <div class="logo">
-            <span>🌙</span>
-            Storyteller
-        </div>
-
-        <nav>
-            <a href="#home">Home</a>
-            <a href="#stories">Stories</a>
-            <a href="#moods">Categories</a>
-            <a href="#jam">Jam</a>
-        </nav>
-
-        <button class="search-btn" onclick="toggleSearch()">
-            🔍
-        </button>
-
-    </header>
-
-
-    <!-- ================= SEARCH ================= -->
-
-    <div class="search-box" id="searchBox">
-
-        <input
-            type="text"
-            id="searchInput"
-            placeholder="Search stories..."
-            onkeyup="searchStories()"
-        >
-
-    </div>
-
-
-    <!-- ================= HERO ================= -->
-
-    <section class="hero" id="home">
-
-        <div class="hero-overlay"></div>
-
-        <div class="hero-content">
-
-                        <p class="small-title">
-                ✦ TONIGHT'S FEATURED STORY
-            </p>
-
-            <h1>Love Story</h1>
-
-            <p class="hero-description">
-
-                A heartfelt tale of two souls finding each
-                other against all odds — a gentle, romantic
-                listen for a quiet evening.
-
-            </p>
-
-            <div class="story-info">
-
-                <span>2026</span>
-                <span>•</span>
-                <span>28 min</span>
-                <span>•</span>
-                <span>Romance</span>
-
-            </div>
-
-            <div class="hero-buttons">
-
-                <button
-                    class="primary-btn"
-                    onclick="playStory('Love Story')"
-                >
-                    ▶ Play Story
-                </button>
-
-                <button
-                    class="secondary-btn"
-                    onclick="openJamChoice()"
-                >
-                    👥 Listen Together
-                </button>
-
-            </div>
-
-        </div>
-
-        <div class="hero-badge">
-            <strong>4.9 ★</strong>
-            <span>12k+ sleepy listeners</span>
-        </div>
-
-    </section>
-
-
-    <!-- ================= MAIN ================= -->
-
-    <main>
-
-
-        <!-- ================= CONTINUE LISTENING ================= -->
-
-        <section class="section" id="stories">
-
-            <div class="section-header">
-
-                <h2>Continue Listening</h2>
-
-                <span>See all →</span>
-
-            </div>
-
-
-                       <div class="story-row" id="storyRow">
-
-
-                
-
-                
-                
-                
-                <!-- STORY CARD -->
-
-                <article
-                    class="story-card"
-                    data-title="Sunday Suspense"
-                    data-category="Suspense"
-                >
-
-                    <div class="story-image star-image">
-
-                        <span class="play-overlay"
-                              onclick="playStory('Sunday Suspense')">
-                            ▶
-                        </span>
-
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Sunday Suspense</h3>
-
-                        <p>35 min • Suspense</p>
-
-                        <div class="progress">
-
-                            <div class="progress-fill"
-                                 style="width: 0%;">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </article>
-
-
-                <!-- STORY CARD -->
-
-                <article
-                    class="story-card story-card-light"
-                    data-title="Mirchi Bangla"
-                    data-category="Mirchi Bangla"
-                >
-
-                    <div class="story-image moon-image">
-
-                        <span class="play-overlay"
-                              onclick="playStory('Mirchi Bangla')">
-                            ▶
-                        </span>
-
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Mirchi Bangla</h3>
-
-                        <p>30 min • Mirchi Bangla</p>
-
-                        <div class="progress">
-
-                            <div class="progress-fill"
-                                 style="width: 0%;">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </article>
-
-
-                <!-- STORY CARD -->
-
-                <article
-                    class="story-card"
-                    data-title="Love Story"
-                    data-category="Love Story"
-                >
-
-                    <div class="story-image forest-image">
-
-                        <span class="play-overlay"
-                              onclick="playStory('Love Story')">
-                            ▶
-                        </span>
-
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Love Story</h3>
-
-                        <p>28 min • Romance</p>
-
-                        <div class="progress">
-
-                            <div class="progress-fill"
-                                 style="width: 0%;">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </article>
-
-
-                <!-- STORY CARD -->
-
-                <article
-                    class="story-card story-card-light"
-                    data-title="Horror Story"
-                    data-category="Horror Story"
-                >
-
-                    <div class="story-image ocean-image">
-
-                        <span class="play-overlay"
-                              onclick="playStory('Horror Story')">
-                            ▶
-                        </span>
-
-                    </div>
-
-                    <div class="story-details">
-
-                        <h3>Horror Story</h3>
-
-                        <p>40 min • Horror</p>
-
-                        <div class="progress">
-
-                            <div class="progress-fill"
-                                 style="width: 0%;">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </article>
-
-
-
-
-
-            </div>
-
-        </section>
-
-
-
-        <!-- ================= MOODS ================= -->
-
-        <section class="section" id="moods">
-
-            <div class="section-header">
-
-                <h2>Choose Your Mood</h2>
-
-            </div>
-
-
-                        <div class="mood-grid">
-
-                <button onclick="filterMood('Sleep')">
-                    😴
-                    <span>Sleep</span>
-                </button>
-
-                <button onclick="filterMood('Relax')">
-                    🌙
-                    <span>Relax</span>
-                </button>
-
-                <button onclick="filterMood('Romance')">
-                    ❤️
-                    <span>Romance</span>
-                </button>
-
-                <button onclick="filterMood('Mystery')">
-                    🕯️
-                    <span>Mystery</span>
-                </button>
-
-                <button onclick="filterMood('Adventure')">
-                    🏔️
-                    <span>Adventure</span>
-                </button>
-
-                <button onclick="filterMood('Suspense')">
-                    🔪
-                    <span>Suspense</span>
-                </button>
-
-                <button onclick="filterMood('Mirchi Bangla')">
-                    🌶️
-                    <span>Mirchi Bangla</span>
-                </button>
-
-                <button onclick="filterMood('Love Story')">
-                    💕
-                    <span>Love Story</span>
-                </button>
-
-                <button onclick="filterMood('Horror Story')">
-                    👻
-                    <span>Horror Story</span>
-                </button>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- ================= JAM ================= -->
-        <div id="userCount" class="user-count">
-    👥 1 listener
-</div>
-        <section class="jam-section" id="jam">
-
-            <div class="jam-content">
-
-                <div class="jam-icon">
-                    👥
-                </div>
-
-                <p class="jam-label">
-                    SLEEPSTORY JAM
-                </p>
-
-                <h2>
-                    Don't sleep alone.
-                    <br>
-                    <span>Listen together.</span>
-                </h2>
-
-                <p>
-                    Create a private room and listen to the same
-                    story with someone you love — even when
-                    they're miles away.
-                </p>
-
-
-                <div class="jam-buttons">
-
-                    <button
-                        class="primary-btn"
-                        onclick="createRoom()"
-                    >
-                        ✨ Create a Jam
-                    </button>
-
-                    <button
-                        class="outline-btn"
-                        onclick="joinRoom()"
-                    >
-                        Join with Code
-                    </button>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-    </main>
-
-
-    <!-- ================= AUDIO PLAYER ================= -->
-
-    <div class="player" id="player">
-
-        <div class="player-story">
-
-            <div class="mini-cover">
-                🌙
-            </div>
-
-            <div>
-
-                <strong id="playerTitle">
-                    Choose a story
-                </strong>
-
-                <small>
-                    SleepStory Original
-                </small>
-
-            </div>
-
-        </div>
-
-
-        <div class="player-controls">
-
-            <button onclick="previousStory()">
-                ⏮
-            </button>
-
-            <button
-                class="play-button"
-                id="playButton"
-                onclick="togglePlay()"
-            >
-                ▶
-            </button>
-
-            <button onclick="nextStory()">
-                ⏭
-            </button>
-
-        </div>
-
-
-        <div class="player-progress">
-
-            <span id="currentTime">
-                0:00
-            </span>
-
-            <input
-                type="range"
-                id="progressBar"
-                min="0"
-                max="100"
-                value="0"
-                oninput="changeProgress()"
-            >
-
-            <span id="duration">
-                0:00
-            </span>
-
-        </div>
-
-
-        <div class="player-extra">
-
-            <button onclick="toggleMute()">
-                🔊
-            </button>
-
-            <select id="sleepTimer" onchange="setSleepTimer()">
-
-                <option value="0">
-                    Sleep Timer
-                </option>
-
-                <option value="15">
-                    15 min
-                </option>
-
-                <option value="30">
-                    30 min
-                </option>
-
-                <option value="45">
-                    45 min
-                </option>
-
-                <option value="60">
-                    60 min
-                </option>
-
-            </select>
-
-            <div class="reaction-bar">
-                <button class="reaction-btn" onclick="sendReaction('❤️')">❤️</button>
-                <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
-                <button class="reaction-btn" onclick="sendReaction('😢')">😢</button>
-                <button class="reaction-btn" onclick="sendReaction('😴')">😴</button>
-                <button class="reaction-btn" onclick="sendReaction('👍')">👍</button>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ================= FULL PAGE PLAYER ================= -->
-
-    <div class="full-player" id="fullPlayer">
-
-        <div class="full-player-top">
-
-            <button class="full-player-close" onclick="closeFullPlayer()">
-                ⌄
-            </button>
-
-            <span id="fullPlayerRoomInfo" class="full-player-room-info"></span>
-
-        </div>
-
-                <div class="full-player-cover" id="fullPlayerCover">
-
-            <div id="youtubePlayerBox">
-                <div id="youtubePlayer"></div>
-            </div>
-
-        </div>
-
-        <div class="full-player-info">
-            <h2 id="fullPlayerTitle">Choose a story</h2>
-            <p>SleepStory Original</p>
-        </div>
-
-        <div class="full-player-progress">
-
-            <span id="fullCurrentTime">0:00</span>
-
-            <input
-                type="range"
-                id="fullProgressBar"
-                min="0"
-                max="100"
-                value="0"
-                oninput="changeProgressFull()"
-            >
-
-            <span id="fullDuration">0:00</span>
-
-        </div>
-
-        <div class="full-player-controls">
-
-            <button onclick="previousStory()">⏮</button>
-
-            <button
-                class="full-play-button"
-                id="fullPlayButton"
-                onclick="togglePlay()"
-            >
-                ▶
-            </button>
-
-            <button onclick="nextStory()">⏭</button>
-
-        </div>
-
-        <div class="full-player-tabs">
-
-            <button class="tab-btn active" onclick="showTab('chat')" id="tabChatBtn">
-                💬 Chat
-            </button>
-
-            <button class="tab-btn" onclick="showTab('reactions')" id="tabReactionsBtn">
-                ❤️ Reactions
-            </button>
-
-        </div>
-
-        <div class="full-player-panel" id="chatPanel">
-
-            <div class="chat-messages" id="chatMessages"></div>
-
-            <div class="chat-input-row">
-                <input type="text" id="chatInput" placeholder="Type a message...">
-                <button onclick="sendChatMessage()">➤</button>
-            </div>
-
-        </div>
-
-        <div class="full-player-panel" id="reactionsPanel" style="display: none;">
-
-            <div class="reaction-bar-full">
-                <button class="reaction-btn" onclick="sendReaction('❤️')">❤️</button>
-                <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
-                <button class="reaction-btn" onclick="sendReaction('😢')">😢</button>
-                <button class="reaction-btn" onclick="sendReaction('😴')">😴</button>
-                <button class="reaction-btn" onclick="sendReaction('👍')">👍</button>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ================= JAM CHOICE MODAL ================= -->
-
-    <div class="modal" id="jamChoiceModal">
-
-        <div class="modal-content">
-
-            <button
-                class="close-btn"
-                onclick="closeJamChoice()"
-            >
-                ✕
-            </button>
-
-            <div class="modal-icon">
-                👥
-            </div>
-
-            <h2>Listen Together</h2>
-
-            <p>
-                Start a new Jam room, or join
-                one your friend already created.
-            </p>
-
-            <div class="jam-choice-buttons">
-
-                <button
-                    class="primary-btn"
-                    onclick="closeJamChoice(); createRoom();"
-                >
-                    ✨ Create a Jam
-                </button>
-
-                <button
-                    class="outline-btn"
-                    onclick="closeJamChoice(); joinRoom();"
-                >
-                    Join with Code
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ================= ROOM MODAL ================= -->
-
-    <div
-        class="modal"
-        id="roomModal"
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
     >
 
-        <div class="modal-content">
+    <title>
+        SleepStory — Listen. Relax. Sleep.
+    </title>
 
-            <button
-                class="close-btn"
-                onclick="closeModal()"
-            >
-                ✕
-            </button>
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 
-            <div class="modal-icon">
-                👥
-            </div>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
 
-            <h2 id="modalTitle">
-                Create a Jam
-            </h2>
+    <!-- YouTube API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
 
-            <p id="modalText">
-                Create a room and invite someone
-                to listen together.
+</head>
+
+
+<body>
+
+
+<!-- ================================================= -->
+<!-- NAVBAR -->
+<!-- ================================================= -->
+
+<nav class="navbar">
+
+    <div class="logo">
+        🌙 Storyteller
+    </div>
+
+
+    <div class="nav-links">
+
+        <a href="#home">
+            Home
+        </a>
+
+        <a href="#stories">
+            Stories
+        </a>
+
+        <a href="#categories">
+            Categories
+        </a>
+
+        <a href="#jam">
+            Jam
+        </a>
+
+        <button
+            class="add-story-btn"
+            onclick="openAddStoryModal()"
+        >
+            + Add Story
+        </button>
+
+    </div>
+
+</nav>
+
+
+<!-- ================================================= -->
+<!-- HERO -->
+<!-- ================================================= -->
+
+<section
+    id="home"
+    class="hero"
+>
+
+    <div class="hero-content">
+
+        <p class="hero-small">
+            FEATURED STORY
+        </p>
+
+        <h1>
+            Love Story
+        </h1>
+
+        <p>
+            Listen to beautiful stories,
+            relax your mind and sleep peacefully.
+        </p>
+
+        <div class="hero-info">
+            🎧 Audio &nbsp; • &nbsp;
+            ❤️ Romance
+        </div>
+
+        <button
+            class="primary-btn"
+            onclick="playStory('Love Story')"
+        >
+            ▶ Play Story
+        </button>
+
+    </div>
+
+</section>
+
+
+<!-- ================================================= -->
+<!-- STORIES -->
+<!-- ================================================= -->
+
+<section
+    id="stories"
+    class="section"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <p class="section-label">
+                LISTEN NOW
             </p>
 
-
-            <div
-                class="room-code"
-                id="roomCode"
-            >
-                ------
-            </div>
-
-            
-
-
-            <input
-                type="text"
-                id="joinCode"
-                maxlength="6"
-                placeholder="Enter 6-digit code"
-            >
-
-
-            <button
-                class="primary-btn modal-btn"
-                id="modalAction"
-                onclick="joinRoom()"
-            >
-                Create Room
-            </button>
+            <h2>
+                Stories
+            </h2>
 
         </div>
 
     </div>
 
 
-    <!-- ================= AUDIO ================= -->
+    <div
+        id="storiesGrid"
+        class="stories-grid"
+    ></div>
 
-    <audio id="audioPlayer" preload="none"></audio>
-<strong id="playerTitle">Choose a story</strong>
-<h2 id="fullPlayerTitle">Choose a story</h2>
+</section>
 
-    <!-- ================= FOOTER ================= -->
 
-    <footer>
+<!-- ================================================= -->
+<!-- CATEGORIES -->
+<!-- ================================================= -->
 
-        <div class="logo">
-            🌙 SleepStory
+<section
+    id="categories"
+    class="section"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <p class="section-label">
+                EXPLORE
+            </p>
+
+            <h2>
+                Categories
+            </h2>
+
         </div>
 
+    </div>
+
+
+    <div class="mood-grid">
+
+        <button
+            onclick="filterMood('all')"
+        >
+            🌙
+            <span>All Stories</span>
+        </button>
+
+
+        <button
+            onclick="filterMood('Sunday Suspense')"
+        >
+            🕵️
+            <span>Sunday Suspense</span>
+        </button>
+
+
+        <button
+            onclick="filterMood('Mirchi Bangla')"
+        >
+            🎙️
+            <span>Mirchi Bangla</span>
+        </button>
+
+
+        <button
+            onclick="filterMood('Love Story')"
+        >
+            ❤️
+            <span>Love Story</span>
+        </button>
+
+
+        <button
+            onclick="filterMood('Horror Story')"
+        >
+            👻
+            <span>Horror Story</span>
+        </button>
+
+    </div>
+
+</section>
+
+
+<!-- ================================================= -->
+<!-- JAM -->
+<!-- ================================================= -->
+
+<section
+    id="jam"
+    class="jam-section"
+>
+
+    <div>
+
+        <p class="section-label">
+            LISTEN TOGETHER
+        </p>
+
+        <h2>
+            Story Jam
+        </h2>
+
         <p>
-            Listen alone. Listen together. Drift away.
+            Create a room and listen
+            together with your friends.
         </p>
 
-        <p class="copyright">
-            © 2026 SleepStory
+
+        <button
+            class="primary-btn"
+            onclick="openJamChoice()"
+        >
+            🎧 Start Jam
+        </button>
+
+    </div>
+
+
+    <div class="user-count-box">
+
+        👥
+
+        <span id="userCount">
+            0
+        </span>
+
+        listening
+
+    </div>
+
+</section>
+
+
+<!-- ================================================= -->
+<!-- MINI AUDIO PLAYER -->
+<!-- ================================================= -->
+
+<div
+    id="audioPlayerBar"
+    class="audio-player"
+>
+
+    <audio
+        id="audioPlayer"
+        preload="none"
+    ></audio>
+
+
+    <div class="player-left">
+
+        <strong id="playerTitle">
+            Choose a story
+        </strong>
+
+    </div>
+
+
+    <div class="player-controls">
+
+        <button
+            onclick="previousStory()"
+        >
+            ⏮
+        </button>
+
+
+        <button
+            id="playButton"
+            onclick="togglePlay()"
+        >
+            ▶
+        </button>
+
+
+        <button
+            onclick="nextStory()"
+        >
+            ⏭
+        </button>
+
+    </div>
+
+
+    <div class="player-progress">
+
+        <span id="currentTime">
+            0:00
+        </span>
+
+        <input
+            id="progressBar"
+            type="range"
+            min="0"
+            max="100"
+            value="0"
+            oninput="changeProgress(this.value)"
+        >
+
+        <span id="duration">
+            0:00
+        </span>
+
+    </div>
+
+
+    <button
+        onclick="toggleMute()"
+    >
+        🔊
+    </button>
+
+</div>
+
+
+<!-- ================================================= -->
+<!-- FULL PLAYER -->
+<!-- ================================================= -->
+
+<div
+    id="fullPlayer"
+    class="full-player"
+>
+
+    <div class="full-player-inner">
+
+        <button
+            class="close-player"
+            onclick="closeFullPlayer()"
+        >
+            ✕
+        </button>
+
+
+        <div
+            id="youtubePlayerBox"
+            class="youtube-player-box"
+        >
+
+            <div id="youtubePlayer"></div>
+
+        </div>
+
+
+        <div class="full-player-info">
+
+            <h2 id="fullPlayerTitle">
+                Choose a story
+            </h2>
+
+
+            <div class="full-progress">
+
+                <span id="fullCurrentTime">
+                    0:00
+                </span>
+
+
+                <input
+                    id="fullProgressBar"
+                    type="range"
+                    min="0"
+                    max="100"
+                    value="0"
+                    oninput="changeProgressFull(this.value)"
+                >
+
+
+                <span id="fullDuration">
+                    0:00
+                </span>
+
+            </div>
+
+
+            <div class="full-controls">
+
+                <button
+                    onclick="skipBackward()"
+                >
+                    ↶ 10
+                </button>
+
+
+                <button
+                    id="fullPlayButton"
+                    onclick="togglePlay()"
+                >
+                    ▶
+                </button>
+
+
+                <button
+                    onclick="skipForward()"
+                >
+                    10 ↷
+                </button>
+
+            </div>
+
+
+            <!-- CHAT -->
+
+            <div class="chat-box">
+
+                <div id="chatMessages"></div>
+
+                <div class="chat-input">
+
+                    <input
+                        id="chatInput"
+                        type="text"
+                        placeholder="Type a message..."
+                        onkeydown="handleChatKey(event)"
+                    >
+
+                    <button
+                        onclick="sendChatMessage()"
+                    >
+                        Send
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ================================================= -->
+<!-- ADD STORY MODAL -->
+<!-- ================================================= -->
+
+<div
+    id="addStoryModal"
+    class="modal"
+>
+
+    <div class="modal-content">
+
+        <button
+            class="modal-close"
+            onclick="closeAddStoryModal()"
+        >
+            ✕
+        </button>
+
+
+        <h2>
+            🎧 Add New Story
+        </h2>
+
+
+        <p>
+            Add an authorized YouTube story
+            to your Storyteller library.
         </p>
 
-    </footer>
+
+        <input
+            id="storyTitle"
+            type="text"
+            placeholder="Story title"
+        >
+
+
+        <select id="storyCategory">
+
+            <option value="Sunday Suspense">
+                Sunday Suspense
+            </option>
+
+            <option value="Mirchi Bangla">
+                Mirchi Bangla
+            </option>
+
+            <option value="Love Story">
+                Love Story
+            </option>
+
+            <option value="Horror Story">
+                Horror Story
+            </option>
+
+        </select>
+
+
+        <input
+            id="youtubeUrl"
+            type="url"
+            placeholder="Paste YouTube link"
+        >
+
+
+        <button
+            class="primary-btn"
+            onclick="addYouTubeStory()"
+        >
+            Add Story
+        </button>
+
+
+        <p
+            id="addStoryMessage"
+        ></p>
+
+    </div>
+
+</div>
+
+
+<!-- ================================================= -->
+<!-- JAM CHOICE MODAL -->
+<!-- ================================================= -->
+
+<div
+    id="jamChoiceModal"
+    class="modal"
+>
+
+    <div class="modal-content">
+
+        <button
+            class="modal-close"
+            onclick="closeModal()"
+        >
+            ✕
+        </button>
+
+
+        <h2>
+            🎧 Story Jam
+        </h2>
+
+
+        <button
+            class="primary-btn"
+            onclick="createRoom()"
+        >
+            Create Room
+        </button>
+
+
+        <button
+            class="secondary-btn"
+            onclick="joinRoom()"
+        >
+            Join Room
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ================================================= -->
+<!-- ROOM MODAL -->
+<!-- ================================================= -->
+
+<div
+    id="roomModal"
+    class="modal"
+>
+
+    <div class="modal-content">
+
+        <button
+            class="modal-close"
+            onclick="closeModal()"
+        >
+            ✕
+        </button>
+
+
+        <h2>
+            Join Story Jam
+        </h2>
+
+
+        <input
+            id="roomCodeInput"
+            maxlength="6"
+            placeholder="Enter 6 character code"
+        >
+
+
+        <button
+            class="primary-btn"
+            onclick="connectToRoom()"
+        >
+            Join
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ================================================= -->
+<!-- SOCKET.IO -->
+<!-- ================================================= -->
 
 <script src="https://storyteller-backend-us3a.onrender.com/socket.io/socket.io.js"></script>
-   <script src="script.js?v=2"></script>
+
+<script src="script.js?v=3"></script>
+
 </body>
+
 </html>
