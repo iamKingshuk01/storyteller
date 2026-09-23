@@ -422,4 +422,428 @@
 
     }
 
+}/* =====================================================
+   ADD STORY BUTTON
+===================================================== */
+
+.add-story-btn {
+    border: none;
+    padding: 10px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    background: #e50914;
+    color: white;
+    transition: 0.2s;
+}
+
+.add-story-btn:hover {
+    transform: translateY(-2px);
+}
+
+
+/* =====================================================
+   STORY CARD
+===================================================== */
+
+.story-card {
+    cursor: pointer;
+    transition: transform 0.25s ease;
+}
+
+.story-card:hover {
+    transform: translateY(-6px);
+}
+
+
+.story-image {
+    position: relative;
+    overflow: hidden;
+}
+
+
+.story-icon {
+    width: 100%;
+    height: 100%;
+    min-height: 180px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 55px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #160000,
+            #3a0000,
+            #080808
+        );
+}
+
+
+.play-overlay {
+    position: absolute;
+
+    inset: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 35px;
+
+    opacity: 0;
+
+    background:
+        rgba(0, 0, 0, 0.55);
+
+    transition: 0.25s;
+}
+
+
+.story-card:hover
+.play-overlay {
+    opacity: 1;
+}
+
+
+.story-type {
+    display: inline-block;
+
+    margin-top: 8px;
+
+    font-size: 12px;
+
+    opacity: 0.7;
+}
+
+
+/* =====================================================
+   EMPTY STORIES
+===================================================== */
+
+.empty-stories {
+    padding: 50px;
+    text-align: center;
+    opacity: 0.6;
+}
+
+
+/* =====================================================
+   ADD STORY MODAL
+===================================================== */
+
+#addStoryModal {
+    display: none;
+}
+
+
+#addStoryModal .modal-content {
+    max-width: 450px;
+}
+
+
+#addStoryModal input,
+#addStoryModal select {
+
+    width: 100%;
+
+    padding: 13px 14px;
+
+    margin: 8px 0;
+
+    border-radius: 10px;
+
+    border: 1px solid #333;
+
+    background: #111;
+
+    color: white;
+
+    outline: none;
+
+    box-sizing: border-box;
+}
+
+
+#addStoryModal input:focus,
+#addStoryModal select:focus {
+
+    border-color: #e50914;
+
+}
+
+
+.modal-close {
+
+    position: absolute;
+
+    top: 15px;
+
+    right: 15px;
+
+    border: none;
+
+    background: transparent;
+
+    color: white;
+
+    font-size: 22px;
+
+    cursor: pointer;
+}
+
+
+#addStoryMessage {
+
+    margin-top: 12px;
+
+    font-size: 14px;
+}
+
+
+/* =====================================================
+   YOUTUBE PLAYER
+===================================================== */
+
+.youtube-player-box {
+
+    width: 100%;
+
+    height: 430px;
+
+    border-radius: 16px;
+
+    overflow: hidden;
+
+    background: #000;
+
+    display: none;
+}
+
+
+#youtubePlayer {
+
+    width: 100%;
+
+    height: 100%;
+}
+
+
+#youtubePlayer iframe {
+
+    width: 100% !important;
+
+    height: 100% !important;
+
+    border: 0;
+}
+
+
+/* =====================================================
+   FULL PLAYER
+===================================================== */
+
+.full-player {
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 9999;
+
+    background:
+        rgba(0, 0, 0, 0.96);
+
+    display: none;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 25px;
+
+    box-sizing: border-box;
+}
+
+
+.full-player.active {
+
+    display: flex;
+
+}
+
+
+.full-player-inner {
+
+    width: min(
+        1000px,
+        100%
+    );
+
+    max-height: 95vh;
+
+    overflow-y: auto;
+
+    position: relative;
+}
+
+
+.close-player {
+
+    position: absolute;
+
+    right: 10px;
+
+    top: 10px;
+
+    z-index: 10;
+
+    width: 42px;
+
+    height: 42px;
+
+    border-radius: 50%;
+
+    border: none;
+
+    cursor: pointer;
+
+    background:
+        rgba(0, 0, 0, 0.8);
+
+    color: white;
+
+    font-size: 20px;
+}
+
+
+/* =====================================================
+   CHAT
+===================================================== */
+
+.chat-box {
+
+    margin-top: 25px;
+
+    background: #111;
+
+    border-radius: 14px;
+
+    padding: 15px;
+}
+
+
+#chatMessages {
+
+    height: 160px;
+
+    overflow-y: auto;
+
+    margin-bottom: 12px;
+}
+
+
+.chat-message {
+
+    background: #222;
+
+    padding: 9px 12px;
+
+    border-radius: 9px;
+
+    margin-bottom: 7px;
+
+    width: fit-content;
+
+    max-width: 80%;
+}
+
+
+.chat-input {
+
+    display: flex;
+
+    gap: 8px;
+}
+
+
+.chat-input input {
+
+    flex: 1;
+
+    padding: 11px;
+
+    border-radius: 8px;
+
+    border: 1px solid #333;
+
+    background: #080808;
+
+    color: white;
+}
+
+
+.chat-input button {
+
+    border: none;
+
+    border-radius: 8px;
+
+    padding: 0 18px;
+
+    cursor: pointer;
+
+    background: #e50914;
+
+    color: white;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 700px) {
+
+    .nav-links {
+
+        gap: 8px;
+
+    }
+
+
+    .nav-links a {
+
+        display: none;
+
+    }
+
+
+    .add-story-btn {
+
+        font-size: 12px;
+
+        padding: 8px 11px;
+
+    }
+
+
+    .youtube-player-box {
+
+        height: 230px;
+
+    }
+
+
+    .full-player {
+
+        padding: 10px;
+
+    }
+
 }
